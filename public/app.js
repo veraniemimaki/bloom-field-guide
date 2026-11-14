@@ -524,9 +524,9 @@ function renderSampleAdaptation() {
       <div class="recipe-top"><div><p class="eyebrow">NEXT TIME · WIND DOWN</p><h2>${escapeHtml(suggested.title)} first</h2></div><span class="recipe-count">Forest</span></div>
       <div class="recipe-detail"><span class="mini-icon">${suggested.icon}</span><div><strong>${escapeHtml(suggested.title)}</strong>Suggested as the first sound to try</div></div>
       <div class="evidence"><strong>Why did it change?</strong><br>In this fictional history, ${escapeHtml(suggested.title)} was marked “felt better.” Because this is the same moment and scene, BLOOM puts it first.</div>
-      <p class="privacy-note">BLOOM is following a stated sound preference here—not interpreting mood or predicting health. This fictional example is not stored, and a real person can always choose another sound or skip.</p>
+      <p class="privacy-note">This demonstrates the adaptation logic; it does not show whether the experience is useful or effective. BLOOM is following a stated sound preference here—not interpreting mood or predicting health. The fictional example is not stored.</p>
     </section>
-    <div class="actions"><button class="primary-button" id="sample-adaptation-back-button" type="button">Back to BLOOM</button></div>`;
+    <div class="actions"><button class="primary-button" id="sample-real-trial-button" type="button">Try the real sound comparison</button><button class="secondary-button" id="sample-adaptation-back-button" type="button">Back to BLOOM</button></div>`;
 }
 function renderRecipe() {
   const ranked = rankVariants(state.context);
@@ -676,6 +676,17 @@ function bindScreen() {
     setScene('forest');
     state.suggestion = buildSuggestion('restless', 'wind-down');
     state.screen = 'sample-adaptation';
+    render();
+  });
+  document.getElementById('sample-real-trial-button')?.addEventListener('click', () => {
+    state.previewSample = false;
+    state.suggestion = null;
+    state.context = 'wind-down';
+    state.sessionSignal = null;
+    state.firstVariant = null;
+    state.index = 0;
+    state.session = [];
+    state.screen = 'trial';
     render();
   });
   document.getElementById('sample-adaptation-back-button')?.addEventListener('click', () => {
