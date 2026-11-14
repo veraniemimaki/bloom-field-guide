@@ -50,7 +50,7 @@ Judges can use the live demo link above without GitHub repo access. The source r
 - Saved ratings can personalize a future suggestion for the same check-in category or moment.
 - Care summary reviews only the current user's local notes and downloads a text file only after the user chooses.
 - Check-in descriptions are never saved or sent; only the matched category and ratings are stored in this browser.
-- Sponsor services are not connected yet. Planned integrations are optional ElevenLabs narration, Gemini preference parsing, Cloudinary media delivery, and Aiven persistence. Gemma on Modal is a stretch goal.
+- Aiven PostgreSQL powers shared Community posts and the protected human-review queue. Gemini moderation and Cloudinary media delivery are not connected yet; the forest and aurora scenes remain local CSS visuals.
 - The illustrated forest and procedural sounds are prototype assets.
 
 ## Development notes
@@ -59,23 +59,20 @@ Do not commit API keys, database passwords, certificates, or real health informa
 
 ## Server-side API foundation
 
-The `api/` service is a small Node HTTP API with:
-- `GET /api/health` for Render health checks.
-- `POST /api/preferences/interpret` for a mock, keyword-based context suggestion.
+The `api/` service is a small Node HTTP API. It reports whether Aiven variables are present without exposing their values, and it provides the community read, submit, review-queue, and decision routes. The preference endpoint remains a mock keyword-based suggestion; BLOOM does not send free-text moment descriptions to an AI provider. Secrets belong in Render environment variables, never in browser code or Git.
 
-The browser app currently uses its own local rule-based interpreter and does not call this endpoint or an AI model. The mock endpoint stores no submitted text. Provider keys belong in Render environment variables, never in browser code or Git.
+## Community and human review
 
-## Community moderation concept
+The Community tab reads approved posts from Aiven PostgreSQL. Submissions are stored as pending and stay hidden until a human reviewer approves them. The reviewer queue and decisions require the `COMMUNITY_MODERATOR_TOKEN`; the frontend keeps the token only in page memory and never saves it.
 
-The Community tab is an interactive, single-browser prototype. It includes fictional peer notes, a mock rule-based moderation check, and a simulated human-review queue. Flagged posts stay hidden from the demo room until a reviewer approves or removes them in the UI.
+Gemini moderation is not connected, so all posts are held for human review. The demo has no member accounts, no automatic alert to professionals, and no crisis monitoring. Approved posts are visible to anyone visiting the site. Use fictional content and do not enter names, contact details, treatment advice, or personal health information. Posts expire after 30 days.
 
-This is not a live chat: posts are not shared between visitors, Gemini is not connected, the review screen is not protected, and no professional is alerted. Use fictional messages only. A real release needs shared storage, authenticated reviewer access, Gemini moderation, staffed human review, and a reviewed escalation process.
 
 ## Aiven PostgreSQL integration groundwork
 
 The API now has an optional Aiven PostgreSQL connection for community posts and the human-review queue. It reads `AIVEN_DATABASE_URL`, verifies TLS with `AIVEN_CA_CERT`, and uses `COMMUNITY_MODERATOR_TOKEN` to protect reviewer endpoints. The API creates the table and indexes from [`api/schema.sql`](api/schema.sql) when the database is configured; records expire after 30 days.
 
-This is groundwork only. The live Community tab remains a local prototype until an Aiven service and its credentials are configured and the frontend is connected. Gemini moderation is not connected; API-submitted posts are held pending human review. Only approved posts are returned publicly. Do not put credentials in Git or submit real health information.
+Aiven is connected to the live API and Community frontend. The service initializes the table from `api/schema.sql`; API-submitted posts remain pending until a human approves them. Only approved posts are returned publicly. Gemini moderation is not connected. Do not put credentials in Git or submit real health information.
 
 Aiven's Node.js connection guidance uses the `pg` package and its PostgreSQL guidance describes the TLS CA requirements: [Aiven Node.js connection guide](https://aiven.io/docs/products/postgresql/howto/connect-node), [Aiven TLS certificates](https://aiven.io/docs/platform/concepts/tls-ssl-certificates).
 
