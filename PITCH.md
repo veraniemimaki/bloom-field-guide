@@ -12,7 +12,7 @@ You can start right away. Choose Forest or Northern Lights; each has its own pai
 
 [Open “See how feedback changes the next suggestion.”]
 
-Here’s a fictional example: soft wind felt worse; rustling leaves felt better. For the same Forest scene and Wind down moment, BLOOM suggests leaves first and explains why. This demonstrates the adaptation logic. It is not evidence that BLOOM is useful or effective.
+Here’s a fictional example: soft wind felt worse; rustling leaves felt better. For the same Forest scene and Wind down moment, BLOOM suggests leaves first and explains why. This shows how the rule works. Now you can try the actual experience.
 
 [Invite a judge to choose “Try the real sound comparison.” Briefly play each sound at the same level setting and let them rate it.]
 
