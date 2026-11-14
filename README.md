@@ -12,16 +12,16 @@
 2. Select **Shape a sensory experiment**. BLOOM uses local keyword rules and your saved ratings to suggest a moment and sound; inspect the explanation and edit either choice.
 3. Start the experiment. Set the sound level once for both sounds, play each browser-generated variation, and rate how each felt.
 4. Return to the start screen and repeat a similar check-in. The suggestion can now use ratings saved from the earlier check-in.
-5. Open **My field guide** for personal notes or **Care summary** to review and download a summary you decide whether to share.
+5. Open **My field guide** for personal notes. **Care team preview** shows a fictional, consent-based follow-up timeline and lets you draft (but not send) a check-in; your own local notes and export are below it.
 6. Choose **Preview a fictional returning-user example** to see sample history kept separate from personal notes.
 
 Switch between **Forest** and **Northern lights** in the banner; this changes the visual backdrop while keeping the sound experiment the same.
 
-Free-text descriptions are read in the browser only, then discarded. They are not saved or sent. BLOOM saves the selected check-in category and sound feedback in local storage on that device. The two soundscapes are synthesized in the browser. Allow audio playback when your browser asks.
+Free-text descriptions are read in the browser only, then discarded. They are not saved or sent. BLOOM saves the selected check-in category, sound feedback, and optional real-world cues in local storage on that device. The My field notes dialog can clear those saved notes and cues. The two soundscapes are synthesized in the browser. Allow audio playback when your browser asks.
 
 ## What BLOOM does
 
-BLOOM is a prototype sensory field guide for people returning home after TMS. It lets someone describe or choose a moment, shape a short nature-inspired sound experiment, record how each variation felt, and build a personal guide from those responses. The care summary is generated from the user's own saved notes and is only downloaded when they choose.
+BLOOM is a prototype sensory field guide for people returning home after TMS. It lets someone describe or choose a moment, shape a short nature-inspired sound experiment, record how each variation felt, and build a personal guide from those responses. The care team preview uses fictional sample data to demonstrate a possible consent-based follow-up workflow. A person's own notes remain local and are only downloaded when they choose.
 
 This is an early demo, not a medical device or treatment. It does not measure brain activity, diagnose depression, detect relapse, or replace clinical care. Its suggestion logic is a small, explainable keyword rule—not an AI model or a reading of someone's mental state.
 
