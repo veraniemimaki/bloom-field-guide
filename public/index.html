@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f6f5ef" />
+  <title>BLOOM — Find a reset that feels like yours</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="BLOOM home"><span class="brand-mark">b</span><span>BLOOM</span></a>
+      <span class="top-note">Your personal sensory field guide</span>
+      <button class="quiet-button" id="history-button" type="button">My field notes</button>
+    </header>
+
+    <section class="scene-banner" aria-label="Illustrated forest scene">
+      <div class="sun"></div><div class="ridge ridge-back"></div><div class="ridge ridge-front"></div>
+      <div class="tree-line" aria-hidden="true">♠　♠　♠　♠　♠　♠　♠　♠　♠</div>
+      <div class="scene-caption"><span class="eyebrow">A MOMENT TO YOURSELF</span><span class="scene-title">A forest, just after rain</span></div>
+    </section>
+
+    <section class="content" id="app" aria-live="polite"></section>
+
+    <footer class="footer">
+      <span>BLOOM is an optional companion alongside clinical care.</span>
+      <button class="text-button" id="about-button" type="button">About this demo</button>
+    </footer>
+  </main>
+
+  <dialog id="history-dialog" class="dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form>
+    <p class="eyebrow">YOUR FIELD NOTES</p><h2>What you’ve tried</h2>
+    <div id="history-content"></div>
+    <p class="privacy-note">Your notes stay in this browser on this device in this prototype.</p>
+    <button class="text-button danger" id="clear-button" type="button">Clear my notes</button>
+  </dialog>
+  <dialog id="about-dialog" class="dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form>
+    <p class="eyebrow">ABOUT BLOOM</p><h2>A field guide, not a diagnosis</h2>
+    <p>BLOOM helps you explore short nature-inspired experiences and keep track of what you report as supportive. It does not measure brain activity, diagnose depression, or replace your care team.</p>
+    <p class="privacy-note">This prototype stores your feedback only in this browser. Use fictional information in a public demo.</p>
+    <form method="dialog"><button class="primary-button">Got it</button></form>
+  </dialog>
+  <script src="app.js"></script>
+</body>
+</html>

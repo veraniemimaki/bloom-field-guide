@@ -4,7 +4,7 @@ services:
     runtime: static
     branch: main
     buildCommand: ""
-    staticPublishPath: .
+    staticPublishPath: ./public
   - type: web
     name: bloom-api
     runtime: node

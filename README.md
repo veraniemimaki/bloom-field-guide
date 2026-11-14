@@ -28,7 +28,7 @@ This is an early demo, not a medical device or treatment. It does not measure br
 The current version is a static browser app with no build step or API keys required.
 
 1. Open a terminal in the project folder.
-2. Run `python3 -m http.server 8000`.
+2. Run `python3 -m http.server --directory public 8000`.
 3. Open <http://localhost:8000>.
 4. Choose a context and try both sound variations, or preview the fictional returning-user example.
 
@@ -36,7 +36,7 @@ Field notes and optional support cues are stored only in the browser and device 
 
 ## Recreate on Render
 
-The repo includes a Render Blueprint at [`render.yaml`](render.yaml), configured for this static app (no build command; publish the repository root).
+The repo includes a Render Blueprint at [`render.yaml`](render.yaml), configured for this app (no build command; publish only the `public/` frontend folder, keeping server code outside the static site).
 
 To create your own Render copy, you need access to this private GitHub repo and a Render account connected to GitHub. Then open [Create a Render Blueprint](https://dashboard.render.com/blueprint/new?repo=https://github.com/veraniemimaki/bloom-field-guide), review the proposed static site, and apply it. Render will give your copy its own public `onrender.com` URL.
 
