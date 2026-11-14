@@ -31,7 +31,7 @@ const sampleNotes = [
 
 let notes = loadNotes();
 let supportOptions = loadSupportOptions();
-let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, momentDescription: '', followUps: {}, followUpDraft: 'Hi, I saw that you asked for a check-in. Would you like to share how things have been going, or would you prefer to talk at your next appointment?', followUpNotice: '', communityTab: 'room', communityMessage: '', communityConsent: false, communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '', reminderSettings: loadReminderSettings(), reminderNotice: '', careCheckInRequested: localStorage.getItem(CARE_REQUEST_STORE_KEY) === 'true' };
+let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, momentDescription: '', generatedMomentImage: '', imageGenerationStatus: 'idle', imageGenerationError: '', followUps: {}, followUpDraft: 'Hi, I saw that you asked for a check-in. Would you like to share how things have been going, or would you prefer to talk at your next appointment?', followUpNotice: '', communityTab: 'room', communityMessage: '', communityConsent: false, communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '', reminderSettings: loadReminderSettings(), reminderNotice: '', careCheckInRequested: localStorage.getItem(CARE_REQUEST_STORE_KEY) === 'true' };
 const demoSignals = {
   restless: { label: 'Restless night', detail: 'A self-reported demo check-in: sleep felt unsettled.', context: 'wind-down', variant: 'wind', reason: 'A quieter wind-down moment may be worth trying after a restless night.' },
   overloaded: { label: 'Too much going on', detail: 'A self-reported demo check-in: the moment feels busy or overstimulating.', context: 'reset', variant: 'leaves', reason: 'A brief pause with a lighter leaf sound may be worth trying when things feel busy.' },
@@ -184,6 +184,56 @@ function render() {
   });
   bindScreen();
 }
+function renderMomentImagePanel() {
+  if (state.imageGenerationStatus === 'loading') return '<p class="moment-image-status" role="status">Gemini is creating your image… BLOOM’s other controls remain available.</p>';
+  if (state.imageGenerationError) return '<p class="moment-image-status error" role="alert">' + escapeHtml(state.imageGenerationError) + '</p>';
+  if (!state.generatedMomentImage) return '';
+  return '<figure class="generated-moment-figure"><img loading="lazy" decoding="async" src="' + escapeHtml(state.generatedMomentImage) + '" alt="AI-generated calming scene inspired by your description"><figcaption>Generated with Google Gemini · not saved by BLOOM <button class="text-button" id="remove-moment-image" type="button">Remove image</button></figcaption></figure>';
+}
+function updateMomentImagePanel() {
+  const panel = document.getElementById('moment-image-result');
+  if (!panel) return;
+  panel.innerHTML = renderMomentImagePanel();
+  panel.querySelector('#remove-moment-image')?.addEventListener('click', clearMomentImage);
+}
+async function generateMomentImage() {
+  const field = document.getElementById('moment-description');
+  const button = document.getElementById('generate-moment-image');
+  const description = String(field?.value || state.momentDescription).trim().slice(0, 160);
+  if (!description || state.imageGenerationStatus === 'loading') return;
+  state.momentDescription = description;
+  state.imageGenerationStatus = 'loading';
+  state.imageGenerationError = '';
+  state.generatedMomentImage = '';
+  if (field) field.disabled = true;
+  if (button) { button.disabled = true; button.textContent = 'Creating image…'; }
+  updateMomentImagePanel();
+  try {
+    const response = await fetch(COMMUNITY_API_BASE + '/api/images/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ description })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Image generation is unavailable right now.');
+    const imageDataUrl = String(result.imageDataUrl || '');
+    if (!/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/i.test(imageDataUrl)) throw new Error('Gemini returned an image format BLOOM cannot display. Please try again.');
+    state.generatedMomentImage = imageDataUrl;
+    state.imageGenerationStatus = 'done';
+  } catch (error) {
+    state.imageGenerationStatus = 'error';
+    state.imageGenerationError = error?.name === 'TypeError' ? 'Could not reach Gemini through BLOOM. Check your connection and try again.' : (error?.message || 'Could not create the image. Please try again.');
+  } finally {
+    if (field) field.disabled = false;
+    const currentButton = document.getElementById('generate-moment-image');
+    if (currentButton) { currentButton.disabled = !state.momentDescription.trim(); currentButton.textContent = 'Create an image for this moment'; }
+    updateMomentImagePanel();
+  }
+}
+function clearMomentImage() {
+  state.generatedMomentImage = '';
+  state.imageGenerationStatus = 'idle';
+  state.imageGenerationError = '';
+  updateMomentImagePanel();
+}
 function renderStart() {
   const supportOption = state.context ? (supportOptions[state.context] || '') : '';
   return `<p class="step-label">A two-minute sensory experiment · 1 of 3</p>
@@ -193,7 +243,8 @@ function renderStart() {
       <div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">YOUR CHOICE</span></div>
       <p class="signal-copy"><strong>${escapeHtml(demoSignals[state.signal].detail)}</strong><br>Choose an example, describe the moment in your own words, or skip the check-in. No phone or wearable sensors are read.</p>
       <div class="signal-options">${Object.entries(demoSignals).map(([id, item]) => `<button class="signal-option ${state.signal === id ? 'selected' : ''}" data-signal="${id}" type="button" aria-pressed="${state.signal === id}">${item.label}</button>`).join('')}</div>
-      <label class="moment-field" for="moment-description"><span>Or describe what feels noticeable <span>(optional)</span></span><textarea id="moment-description" maxlength="160" placeholder="For example: indoors, tired, and wanting something steady">${escapeHtml(state.momentDescription)}</textarea><small>Read locally in this page only; not saved or sent. Avoid names or medical details.</small></label>
+      <label class="moment-field" for="moment-description"><span>Or describe what feels noticeable <span>(optional)</span></span><textarea id="moment-description" maxlength="160" placeholder="For example: indoors, tired, and wanting something steady">${escapeHtml(state.momentDescription)}</textarea><small>Your description stays in this browser unless you choose to create an image. If you do, it is sent to Google Gemini. BLOOM does not save the prompt or image. Avoid names or medical details.</small></label>
+      <div class="moment-image-tool"><button class="secondary-button" id="generate-moment-image" type="button" ${state.momentDescription.trim() && state.imageGenerationStatus !== 'loading' ? '' : 'disabled'}>${state.imageGenerationStatus === 'loading' ? 'Creating image…' : 'Create an image for this moment'}</button><p class="privacy-note">Optional · your description is sent to Gemini only when you tap this button. Gemini creates a visual scene, not a mental-health interpretation. Generation uses BLOOM’s Gemini quota and may incur costs.</p><div id="moment-image-result" aria-live="polite">${renderMomentImagePanel()}</div></div>
       <button class="secondary-button" id="suggest-button" type="button">Shape a sensory experiment</button>
       ${state.suggestion ? `<div class="suggestion-card"><p class="eyebrow">A STARTING POINT TO CONSIDER</p><p class="suggestion-edit-label">Moment</p><select id="suggestion-context" class="suggestion-select">${contexts.map(item => `<option value="${item.id}" ${item.id === state.suggestion.context ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p class="suggestion-edit-label">Sound to try first</p><select id="suggestion-variant" class="suggestion-select">${availableVariants().map(item => `<option value="${item.id}" ${item.id === state.suggestion.variant ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p>${escapeHtml(state.suggestion.reason)}</p>${state.suggestion.variantEdited ? `<p class="edit-note">You changed the first sound to ${escapeHtml(getChoice(variants,state.suggestion.variant).title)}.</p>` : ''}<div class="suggestion-actions"><button class="primary-button" id="use-suggestion-button" type="button">Try this suggestion</button><button class="text-button" id="clear-suggestion-button" type="button">Clear suggestion</button></div></div>` : ''}
       <p class="privacy-note">Suggestions use transparent keyword rules and your saved ratings. They are exploratory, not a reading of your mental state or clinical recommendations.</p>
@@ -587,7 +638,13 @@ function bindScreen() {
   document.getElementById('copy-followup-button')?.addEventListener('click', copyFollowUpDraft);
   document.querySelectorAll('[data-signal]').forEach(button => button.addEventListener('click', () => { state.signal = button.dataset.signal; state.suggestion = null; state.momentMatch = null; state.descriptionEntered = false; render(); }));
   document.getElementById('trial-sound-level')?.addEventListener('change', event => { state.soundLevel = event.target.value; stopSound(); render(); });
-  document.getElementById('moment-description')?.addEventListener('input', event => { state.momentDescription = event.target.value.slice(0, 160); });
+  document.getElementById('moment-description')?.addEventListener('input', event => {
+    state.momentDescription = event.target.value.slice(0, 160);
+    if (state.generatedMomentImage) clearMomentImage();
+    const button = document.getElementById('generate-moment-image');
+    if (button) button.disabled = !state.momentDescription.trim() || state.imageGenerationStatus === 'loading';
+  });
+  document.getElementById('generate-moment-image')?.addEventListener('click', generateMomentImage);
   document.getElementById('suggest-button')?.addEventListener('click', () => {
     const description = document.getElementById('moment-description')?.value || state.momentDescription;
     state.momentDescription = description.slice(0, 160);
