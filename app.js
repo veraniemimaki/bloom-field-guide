@@ -1,4 +1,5 @@
 const STORE_KEY = 'bloom-field-notes-v1';
+const SUPPORT_STORE_KEY = 'bloom-support-options-v1';
 const contexts = [
   { id: 'wind-down', title: 'Wind down', sub: 'A softer end to the day', icon: '☾' },
   { id: 'reset', title: 'Take a small pause', sub: 'A moment to reset', icon: '✳' },
@@ -22,6 +23,7 @@ const sampleNotes = [
 ];
 
 let notes = loadNotes();
+let supportOptions = loadSupportOptions();
 let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false };
 let audioContext = null;
 let soundNodes = [];
@@ -32,6 +34,16 @@ function loadNotes() {
   try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); } catch { return []; }
 }
 function saveNotes() { localStorage.setItem(STORE_KEY, JSON.stringify(notes)); }
+function loadSupportOptions() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SUPPORT_STORE_KEY) || '{}');
+    return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+  } catch { return {}; }
+}
+function saveSupportOptions() { localStorage.setItem(SUPPORT_STORE_KEY, JSON.stringify(supportOptions)); }
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+}
 function getChoice(list, id) { return list.find(item => item.id === id); }
 function render() {
   const app = document.getElementById('app');
@@ -41,11 +53,13 @@ function render() {
   bindScreen();
 }
 function renderStart() {
+  const supportOption = state.context ? (supportOptions[state.context] || '') : '';
   return `<p class="step-label">A two-minute sensory experiment · 1 of 3</p>
     <h1>What would feel useful right now?</h1>
     <p class="lead">Choose a moment. We’ll explore two versions of the same forest scene, changing only the sound.</p>
     <button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a returning-user example <span aria-hidden="true">↗</span></button>
     <div class="choice-grid">${contexts.map(c => `<button class="choice-card ${state.context === c.id ? 'selected' : ''}" data-context="${c.id}" type="button"><span class="choice-icon">${c.icon}</span><span><span class="choice-title">${c.title}</span><span class="choice-sub">${c.sub}</span></span></button>`).join('')}</div>
+    ${state.context ? `<label class="support-option-field" for="support-option"><span class="support-option-title">A small support option for this moment <span>(optional)</span></span><textarea id="support-option" maxlength="160" placeholder="For example: sit by an open window">${escapeHtml(supportOption)}</textarea><span class="privacy-note">Saved only on this device. You can change or remove it anytime.</span></label>` : ''}
     <div class="actions"><button class="primary-button" id="begin-button" type="button" ${state.context ? '' : 'disabled'}>Begin the experience <span aria-hidden="true">→</span></button><button class="text-button" id="skip-button" type="button">Not now</button></div>
     <p class="privacy-note">The example uses fictional responses and won’t be saved as your notes.</p>`;
 }
@@ -66,6 +80,7 @@ function renderRecipe() {
   const best = ranked.find(v => v.positive > 0) || ranked[0];
   const other = ranked.find(v => v.id !== best.id);
   const hasSupportiveSignal = ranked.some(v => v.positive > 0);
+  const supportOption = !state.previewSample ? (supportOptions[state.context] || '').trim() : '';
   const evidence = hasSupportiveSignal
     ? best.count === 1
       ? `You’ve tried ${best.title.toLowerCase()} once in this context. There isn’t a pattern yet.`
@@ -79,6 +94,7 @@ function renderRecipe() {
     <div class="recipe-card">${hasSupportiveSignal ? `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>${best.title} in the forest</h2></div><span class="recipe-count">${best.count} ${best.count === 1 ? 'try' : 'tries'}</span></div>
       <div class="recipe-detail"><span class="mini-icon">${best.icon}</span><div><strong>${best.title}</strong><span>Forest scene · sound only</span></div></div>` : `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>No sound selected</h2></div></div>`}
       <div class="evidence"><strong>${state.previewSample ? 'What the sample notes say' : 'What your notes say'}</strong><br>${evidence}${state.previewSample ? '<br><span class="privacy-note">Fictional example only—not a real person’s history.</span>' : ''}</div>
+      ${supportOption ? `<div class="real-world"><strong>Something you chose for this moment</strong><p>${escapeHtml(supportOption)}</p></div>` : ''}
       ${hasSupportiveSignal ? `<div class="real-world"><strong>A real-world version (you choose)</strong><p>${takeAlong}</p></div>` : ''}
       ${state.session.some(x => x.skipped) ? '<p class="privacy-note">Skipped versions weren’t counted as feedback.</p>' : ''}
       <div class="actions"><button class="primary-button" id="again-button" type="button">${hasSupportiveSignal ? 'Try this again' : 'Try these sounds again'}</button><button class="secondary-button" id="edit-button" type="button">Change context</button></div>
@@ -94,6 +110,10 @@ function rankVariants(contextId) {
 }
 function bindScreen() {
   document.querySelectorAll('[data-context]').forEach(button => button.addEventListener('click', () => { state.context = button.dataset.context; render(); }));
+  document.getElementById('support-option')?.addEventListener('input', event => {
+    supportOptions[state.context] = event.target.value.slice(0, 160);
+    saveSupportOptions();
+  });
   document.getElementById('begin-button')?.addEventListener('click', () => { state.previewSample = false; state.screen = 'trial'; state.index = 0; state.session = []; render(); });
   document.getElementById('sample-journey-button')?.addEventListener('click', () => { state.previewSample = true; state.context = 'wind-down'; state.screen = 'recipe'; render(); });
   document.getElementById('skip-button')?.addEventListener('click', () => { state.screen = 'recipe'; state.context ||= contexts[0].id; render(); });
