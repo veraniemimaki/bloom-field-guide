@@ -23,10 +23,8 @@ const feedback = [
 ];
 // Fictional example data is kept separate from a person's saved field notes.
 const sampleNotes = [
-  { context: 'wind-down', variant: 'wind', response: 'better' },
-  { context: 'wind-down', variant: 'leaves', response: 'same' },
-  { context: 'wind-down', variant: 'wind', response: 'better' },
-  { context: 'reset', variant: 'leaves', response: 'better' }
+  { context: 'wind-down', variant: 'wind', response: 'worse' },
+  { context: 'wind-down', variant: 'leaves', response: 'better' }
 ];
 
 let notes = loadNotes();
@@ -165,6 +163,7 @@ function render() {
   if (state.screen === 'trial') app.innerHTML = renderTrial();
   if (state.screen === 'recipe') app.innerHTML = renderRecipe();
   if (state.screen === 'guide') app.innerHTML = renderGuide();
+  if (state.screen === 'sample-adaptation') app.innerHTML = renderSampleAdaptation();
   if (state.screen === 'clinician') app.innerHTML = renderClinician();
   if (state.screen === 'community') app.innerHTML = renderCommunity();
   document.getElementById('patient-view-button')?.classList.toggle('active', state.view === 'patient');
@@ -513,6 +512,21 @@ function renderGuide() {
     <div class="guide-grid">${cards}</div>
     <div class="actions"><button class="secondary-button" id="guide-back-button" type="button">Back to moments</button></div>`;
 }
+function renderSampleAdaptation() {
+  const suggestion = state.suggestion;
+  const suggested = getChoice(variants, suggestion?.variant || 'leaves');
+  return `<p class="step-label">Fictional example · not saved to anyone’s notes</p>
+    <h1>Feedback changes the next starting sound.</h1>
+    <p class="lead">Same person’s example · same Forest scene · same “Wind down” moment.</p>
+    <section class="recipe-card sample-adaptation-card" aria-label="Fictional preference example">
+      <div class="evidence"><strong>Previous fictional session</strong><br>Soft wind — <b>felt worse</b><br>Rustling leaves — <b>felt better</b></div>
+      <div class="recipe-top"><div><p class="eyebrow">NEXT TIME · WIND DOWN</p><h2>${escapeHtml(suggested.title)} first</h2></div><span class="recipe-count">Forest</span></div>
+      <div class="recipe-detail"><span class="mini-icon">${suggested.icon}</span><div><strong>${escapeHtml(suggested.title)}</strong>Suggested as the first sound to try</div></div>
+      <div class="evidence"><strong>Why did it change?</strong><br>${escapeHtml(suggestion?.reason || 'This example uses the previous fictional ratings.')}</div>
+      <p class="privacy-note">BLOOM is following a stated sound preference here—not interpreting mood or predicting health. This fictional example is not stored, and a real person can always choose another sound or skip.</p>
+    </section>
+    <div class="actions"><button class="primary-button" id="sample-adaptation-back-button" type="button">Back to BLOOM</button></div>`;
+}
 function renderRecipe() {
   const ranked = rankVariants(state.context);
   const best = ranked.find(v => v.positive > 0) || ranked[0];
@@ -654,7 +668,21 @@ function bindScreen() {
     saveSupportOptions();
   });
   document.getElementById('begin-button')?.addEventListener('click', () => { state.previewSample = false; state.context = state.context || demoSignals[state.signal]?.context || contexts[0].id; state.sessionSignal = null; state.firstVariant = null; state.screen = 'trial'; state.index = 0; state.session = []; render(); });
-  document.getElementById('sample-journey-button')?.addEventListener('click', () => { state.previewSample = true; state.context = 'wind-down'; state.screen = 'recipe'; render(); });
+  document.getElementById('sample-journey-button')?.addEventListener('click', () => {
+    state.previewSample = true;
+    state.context = 'wind-down';
+    state.signal = 'restless';
+    setScene('forest');
+    state.suggestion = buildSuggestion('restless', 'wind-down');
+    state.screen = 'sample-adaptation';
+    render();
+  });
+  document.getElementById('sample-adaptation-back-button')?.addEventListener('click', () => {
+    state.previewSample = false;
+    state.suggestion = null;
+    state.screen = 'start';
+    render();
+  });
   document.getElementById('skip-button')?.addEventListener('click', () => { state.screen = 'recipe'; state.context ||= contexts[0].id; render(); });
   document.getElementById('play-button')?.addEventListener('click', toggleSound);
   document.querySelectorAll('[data-feedback]').forEach(button => button.addEventListener('click', () => recordResponse(button.dataset.feedback)));
