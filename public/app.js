@@ -35,6 +35,7 @@ const demoSignals = {
   low: { label: 'Low energy', detail: 'A self-reported demo check-in: energy feels low today.', context: 'reset', variant: 'wind', reason: 'A short, gentle pause may be worth trying; you can choose another option.' },
   setting: { label: 'By a window or outdoors', detail: 'A self-reported demo check-in: you are near a window or outdoors.', context: 'outside', variant: 'leaves', reason: 'A light nature-inspired sound may fit this setting; you can choose another option.' }
 };
+let selectedScene = 'forest';
 let audioContext = null;
 let soundNodes = [];
 let soundTimer = null;
@@ -66,13 +67,18 @@ function render() {
   document.getElementById('patient-view-button')?.classList.toggle('active', state.view === 'patient');
   document.getElementById('clinician-view-button')?.classList.toggle('active', state.view === 'clinician');
   document.getElementById('community-view-button')?.classList.toggle('active', state.view === 'community');
+  document.querySelectorAll('[data-scene]').forEach(button => {
+    const isSelected = button.dataset.scene === selectedScene;
+    button.classList.toggle('active', isSelected);
+    button.setAttribute('aria-pressed', String(isSelected));
+  });
   bindScreen();
 }
 function renderStart() {
   const supportOption = state.context ? (supportOptions[state.context] || '') : '';
   return `<p class="step-label">A two-minute sensory experiment · 1 of 3</p>
     <h1>What would feel useful right now?</h1>
-    <p class="lead">Choose a moment. We’ll explore two versions of the same forest scene, changing only the sound.</p>
+    <p class="lead">Choose a moment, then compare two versions of the sound. The forest or northern-lights scene is a visual backdrop only.</p>
     <section class="signal-panel" aria-labelledby="signal-heading">
       <div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">YOUR CHOICE</span></div>
       <p class="signal-copy"><strong>${escapeHtml(demoSignals[state.signal].detail)}</strong><br>Choose an example, describe the moment in your own words, or skip the check-in. No phone or wearable sensors are read.</p>
@@ -208,7 +214,7 @@ function renderGuide() {
       : total
         ? 'No sound has been marked “felt better” yet. You can try again or change the options.'
         : 'No sound feedback saved for this moment yet.';
-    return `<section class="guide-card"><div class="guide-card-top"><div><p class="eyebrow">${context.title.toUpperCase()}</p><h2>${preferred ? preferred.title + ' in the forest' : 'Still exploring'}</h2></div>${total ? `<span class="recipe-count">${total} ${total === 1 ? 'try' : 'tries'}</span>` : ''}</div>
+    return `<section class="guide-card"><div class="guide-card-top"><div><p class="eyebrow">${context.title.toUpperCase()}</p><h2>${preferred ? preferred.title + (selectedScene === 'aurora' ? ' beneath the northern lights' : ' in the forest') : 'Still exploring'}</h2></div>${total ? `<span class="recipe-count">${total} ${total === 1 ? 'try' : 'tries'}</span>` : ''}</div>
       <p class="guide-evidence">${evidence}</p>
       ${cue ? `<div class="guide-cue"><strong>Your optional real-world cue</strong><p>${escapeHtml(cue)}</p></div>` : '<p class="guide-no-cue">No real-world cue saved for this moment.</p>'}
       <div class="guide-actions"><button class="primary-button" data-guide-try="${context.id}" type="button">Try this moment</button><button class="secondary-button" data-guide-edit="${context.id}" type="button">Edit real-world cue</button></div>
@@ -239,7 +245,7 @@ function renderRecipe() {
   }[state.context];
   return `<p class="step-label">${state.previewSample ? 'Fictional example · sample history' : 'Your field note · saved on this device'}</p><h1>${hasSupportiveSignal ? 'A reset you can make your own.' : 'Nothing stood out as supportive yet.'}</h1>
     <p class="lead">${hasSupportiveSignal ? 'BLOOM keeps your response visible, so you can decide whether this recipe belongs in your field guide.' : 'That feedback is useful too. You don’t have to reuse something that didn’t feel supportive.'}</p>
-    <div class="recipe-card">${hasSupportiveSignal ? `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>${best.title} in the forest</h2></div><span class="recipe-count">${best.count} ${best.count === 1 ? 'try' : 'tries'}</span></div>
+    <div class="recipe-card">${hasSupportiveSignal ? `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>${best.title} ${selectedScene === 'aurora' ? 'beneath the northern lights' : 'in the forest'}</h2></div><span class="recipe-count">${best.count} ${best.count === 1 ? 'try' : 'tries'}</span></div>
       <div class="recipe-detail"><span class="mini-icon">${best.icon}</span><div><strong>${best.title}</strong><span>Forest scene · sound only</span></div></div>` : `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>No sound selected</h2></div></div>`}
       <div class="evidence"><strong>${state.previewSample ? 'What the sample notes say' : 'What your notes say'}</strong><br>${evidence}${state.previewSample ? '<br><span class="privacy-note">Fictional example only—not a real person’s history.</span>' : ''}</div>
       ${state.sessionSignal ? `<div class="real-world"><strong>Your check-in</strong><p>${escapeHtml(demoSignals[state.sessionSignal]?.label || '')} · self-reported</p></div>` : ''}
@@ -412,6 +418,22 @@ function stopSound() {
   soundNodes = [];
 }
 
+function setScene(scene) {
+  if (!['forest', 'aurora'].includes(scene)) return;
+  selectedScene = scene;
+  const banner = document.getElementById('scene-banner');
+  banner.classList.toggle('forest-scene', scene === 'forest');
+  banner.classList.toggle('aurora-scene', scene === 'aurora');
+  document.getElementById('scene-title').textContent = scene === 'forest' ? 'A forest, just after rain' : 'Northern lights, moving quietly';
+  document.getElementById('scene-eyebrow').textContent = scene === 'forest' ? 'A MOMENT TO YOURSELF' : 'A DIFFERENT VIEW, SAME SOUND EXPERIMENT';
+  banner.setAttribute('aria-label', scene === 'forest' ? 'Forest visual backdrop' : 'Northern lights visual backdrop');
+  document.querySelectorAll('[data-scene]').forEach(button => {
+    const isSelected = button.dataset.scene === scene;
+    button.classList.toggle('active', isSelected);
+    button.setAttribute('aria-pressed', String(isSelected));
+  });
+}
+document.querySelectorAll('[data-scene]').forEach(button => button.addEventListener('click', () => setScene(button.dataset.scene)));
 document.getElementById('history-button').addEventListener('click', () => { renderHistory(); document.getElementById('history-dialog').showModal(); });
 document.getElementById('about-button').addEventListener('click', () => document.getElementById('about-dialog').showModal());
 document.getElementById('clear-button').addEventListener('click', () => { notes = []; saveNotes(); renderHistory(); });
