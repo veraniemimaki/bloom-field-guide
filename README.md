@@ -10,10 +10,10 @@ You only need this link and a modern web browser. No GitHub access, account, ins
 
 ### Two-minute walkthrough
 
-1. In **Patient**, choose a check-in or describe the moment, then select **Shape a sensory experiment**.
-2. Review the starting suggestion and why it was chosen; edit it if you like, then choose **Try this suggestion**.
+1. In **Patient**, choose **Start the sound comparison** to begin immediately with the selected scene’s sound pair. Or open **Personalize this moment (optional)** first.
+2. To tailor a suggestion, choose a self-reported check-in or describe the moment, select **Shape a sensory experiment**, review the reason, and choose **Try this suggestion**.
 3. Press **Play**, then rate each sound *felt better*, *no difference*, or *felt worse*. You can skip or stop at any time.
-4. BLOOM saves rated experiences in this browser. Return to **Patient** and repeat a check-in to see how your own feedback informs a later suggestion.
+4. BLOOM saves rated experiences in this browser. Repeat a check-in later to see how your own feedback informs a future suggestion.
 5. Optionally choose a reminder time and frequency. Browser reminders work only while BLOOM is open and notifications are allowed.
 6. Choose **I’d like a check-in** to add a private note for yourself. Downloading your summary creates a file on your device; BLOOM does not send it to your care team.
 
