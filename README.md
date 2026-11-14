@@ -17,7 +17,7 @@
 
 Switch between **Forest** and **Northern lights** in the banner; this changes the visual backdrop while keeping the sound experiment the same.
 
-Free-text descriptions are read in the browser only, then discarded. Optional phone movement is sampled only after a user taps the button; raw readings stay in memory for six seconds, are discarded, and are never transmitted. The movement cue describes device movement only, not mood or health. BLOOM saves the selected check-in category, sound feedback, and optional real-world cues in local storage on that device. The My field notes dialog can clear those saved notes and cues. The two soundscapes are synthesized in the browser. Allow audio playback when your browser asks.
+Free-text descriptions are read in the browser only, then discarded. Optional phone movement is sampled only after a user taps the button; raw readings stay in memory for six seconds, are discarded, and are never transmitted. If the user rates that session, only the broad still/moving category is saved with the rating in local browser storage. Learning compares measured and simulated samples separately. The movement cue describes device movement only, not mood or health. BLOOM saves the selected check-in category, sound feedback, and optional real-world cues in local storage on that device. The My field notes dialog can clear those saved notes and cues. The two soundscapes are synthesized in the browser. Allow audio playback when your browser asks.
 
 ## What BLOOM does
 
@@ -47,8 +47,8 @@ Judges can use the live demo link above without GitHub repo access. The source r
 ## Current status
 
 - Demo flow: self-reported check-in or optional description → local, explainable suggestion informed by saved feedback → two generated sound variations with a shared intensity setting → user rating → personal sensory field guide.
-- Saved ratings can personalize a future suggestion for the same check-in category or moment.
-- Care summary reviews only the current user's local notes and downloads a text file only after the user chooses.
+- Saved ratings can personalize a future suggestion for the same check-in category or moment. Optional six-second phone movement samples can also inform an explicitly labeled context cue and be compared with the user's later ratings; raw readings are discarded and measured samples stay separate from simulated examples.
+- Care team preview uses fictional data. The current user's local notes are shown separately and downloaded only after they choose.
 - Check-in descriptions are never saved or sent; only the matched category and ratings are stored in this browser.
 - Aiven PostgreSQL powers shared Community posts and the protected human-review queue. Gemini moderation and Cloudinary media delivery are not connected yet; the forest and aurora scenes remain local CSS visuals.
 - The illustrated forest and procedural sounds are prototype assets.
