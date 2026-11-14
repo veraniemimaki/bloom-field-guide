@@ -28,20 +28,17 @@ You only need this link and a modern web browser. No GitHub access, account, ins
 
 You don’t need to add someone as a GitHub collaborator just to let them try the live demo. Add repo access only if they need to view or change the private source code.
 
-## What BLOOM does
+## Submission description
 
-BLOOM is a prototype sensory field guide for people returning home after TMS. It lets someone choose or describe a moment, try two nature-inspired sound variations, report how each felt, and keep a personal guide from those responses. Its suggestions use simple, explainable keyword rules and saved feedback—not AI or a reading of someone's mental state.
+**BLOOM is a personal sensory field guide for life at home after TMS.**
 
-The care team preview uses fictional data. It demonstrates a possible follow-up workflow but is not connected to real patient accounts or clinicians.
+This 48-hour prototype explores a modest idea: a small, optional sound ritual could help someone notice what they personally prefer in everyday moments after treatment. Start immediately or choose a self-reported check-in and describe the moment. Forest and Northern Lights each have their own pair of browser-generated sounds. Compare them using the same level setting, rate each, and see your own feedback shape a future suggestion—with a plain explanation of why it changed. Personal notes stay in the browser on the person’s device.
 
-## Evidence and evaluation status
+The optional Community space uses Aiven PostgreSQL to hold posts for human review; only approved posts appear, and they expire after 30 days. Codex helped us build and refine the working demo.
 
-BLOOM was built as a 48-hour hackathon prototype. We have not completed formal research with people who have received TMS or clinical evaluation with clinicians. Reactions to a demo are informal feedback and should not be presented as patient or clinician validation.
+We have not formally evaluated BLOOM with people after TMS or clinicians. This is a design hypothesis, not a treatment or relapse-prevention claim. The next step is co-design and a feasibility study of clarity, usefulness, and repeat use.
 
-The design hypothesis is modest: an optional, short sound comparison and a person-controlled record of their own preferences may help someone explore what feels supportive at home and make that activity easier to return to. This has not been tested. BLOOM has no evidence that it improves depression symptoms, maintains recovery, or prevents relapse; it is not a treatment or a monitoring system.
-
-A next evaluation would begin with co-design and usability feedback from people with lived experience and clinicians. If a suitable clinical partner and approvals are in place, a small feasibility study could assess clarity, accessibility, perceived usefulness, willingness to repeat the activity, and reasons people skip or stop. These measures would assess feasibility and acceptability, not clinical efficacy. Any later clinical outcome study would need appropriate oversight, informed consent, and a defined clinical protocol.
-
+[Read the two-minute pitch](PITCH.md).
 
 ## Run locally
 
