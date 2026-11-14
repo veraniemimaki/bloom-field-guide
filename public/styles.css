@@ -208,3 +208,17 @@ body.aurora-theme .care-request-summary{background:#25283e;color:#e8e9f8}
 body.aurora-theme .gentle-support-note{background:#2c293b;border-color:#51465c}
 body.aurora-theme .support-dialog a{color:#b8d8ef}
 @media(max-width:620px){.reminder-heading{flex-direction:column}.reminder-fields{grid-template-columns:1fr 1fr}.care-request-card{align-items:flex-start;flex-direction:column}}
+
+
+.moment-image-tool{margin:10px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:13px;background:#ffffff72}
+.moment-image-tool>p{margin:7px 0;color:var(--muted);font-size:10px;line-height:1.45}
+.moment-image-tool button:disabled{opacity:.5;cursor:not-allowed}
+.moment-image-status{margin:10px 0;padding:10px 12px;border-radius:10px;background:#f4f2ea;color:var(--ink);font-size:11px;line-height:1.5}
+.moment-image-status.error{background:#fbf1ed;color:#764a3c}
+.generated-moment-figure{margin:12px 0 0}
+.generated-moment-figure img{display:block;width:min(100%,520px);max-height:390px;object-fit:cover;border-radius:14px;background:#ecebe4}
+.generated-moment-figure figcaption{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:7px;color:var(--muted);font-size:10px}
+.generated-moment-figure figcaption .text-button{padding:4px}
+body.aurora-theme .moment-image-tool{background:#15233a;border-color:#344963}
+body.aurora-theme .moment-image-status{background:#202b40;color:#eaf0f8}
+body.aurora-theme .moment-image-status.error{background:#392c3b;color:#f5dfeb}
