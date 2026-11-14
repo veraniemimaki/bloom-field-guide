@@ -34,6 +34,15 @@ BLOOM is a prototype sensory field guide for people returning home after TMS. It
 
 The care team preview uses fictional data. It demonstrates a possible follow-up workflow but is not connected to real patient accounts or clinicians.
 
+## Evidence and evaluation status
+
+BLOOM was built as a 48-hour hackathon prototype. We have not completed formal research with people who have received TMS or clinical evaluation with clinicians. Reactions to a demo are informal feedback and should not be presented as patient or clinician validation.
+
+The design hypothesis is modest: an optional, short sound comparison and a person-controlled record of their own preferences may help someone explore what feels supportive at home and make that activity easier to return to. This has not been tested. BLOOM has no evidence that it improves depression symptoms, maintains recovery, or prevents relapse; it is not a treatment or a monitoring system.
+
+A next evaluation would begin with co-design and usability feedback from people with lived experience and clinicians. If a suitable clinical partner and approvals are in place, a small feasibility study could assess clarity, accessibility, perceived usefulness, willingness to repeat the activity, and reasons people skip or stop. These measures would assess feasibility and acceptability, not clinical efficacy. Any later clinical outcome study would need appropriate oversight, informed consent, and a defined clinical protocol.
+
+
 ## Run locally
 
 The current version is a static browser app with no build step or API keys required.
@@ -45,29 +54,13 @@ The current version is a static browser app with no build step or API keys requi
 
 Field notes, check-in categories, and optional real-world cues stay in local storage on the browser and device where they were entered. Free-text descriptions are not saved.
 
-## Deploy the website on Netlify
+## Deploy on Render
 
-The frontend is a static site in `public/`. The root `netlify.toml` sets Netlify's publish directory to `public`; no build command or frontend dependency installation is needed.
+The live demo is hosted at [bloom-field-guide.onrender.com](https://bloom-field-guide.onrender.com). The Render static site is connected to this GitHub repository, serves the `public/` folder, and automatically deploys commits from `main`. Netlify is not required to run or deploy the live demo; any Netlify link attached to a pull request is only a preview.
 
-1. Import this GitHub repository into Netlify and select the `main` branch.
-2. Leave the base directory and build command blank. The publish directory is `public`.
-3. Deploy the site. For an existing Netlify project, clear any old base directory or build command overrides, then redeploy after pushing this configuration.
+The community API runs separately at [bloom-api-g7bg.onrender.com](https://bloom-api-g7bg.onrender.com). Its credentials belong in Render environment variables, never in Git or frontend files.
 
-For a manual drag-and-drop deployment, upload the `public/` folder itself, so `index.html` is at the deployment root.
-
-The Node API in `api/` is hosted separately on Render; Netlify only hosts the frontend. `public/app.js` points to `https://bloom-api-g7bg.onrender.com`. The API allows `https://bloomhuyaah.netlify.app`; redeploy the Render API after updating its source to enable requests from this site. For another frontend domain, add its exact origin to the API's `CORS_ORIGIN` environment variable (comma-separated, without a trailing slash).
-
-Database and moderator credentials belong on the Render API service. They are not needed to publish the static website and must never be added to `public/` or Netlify frontend assets. Community features depend on the API and its configured integrations.
-
-If the homepage returns 404, inspect Netlify's deployed files: `index.html`, `app.js`, and `styles.css` should be at the top level, rather than inside a `public` subfolder.
-
-## Recreate on Render
-
-The repo includes a Render Blueprint at [`render.yaml`](render.yaml), configured for this app (no build command; publish only the `public/` frontend folder, keeping server code outside the static site).
-
-To create your own Render copy, you need access to this private GitHub repo and a Render account connected to GitHub. Then open [Create a Render Blueprint](https://dashboard.render.com/blueprint/new?repo=https://github.com/veraniemimaki/bloom-field-guide), review the proposed static site, and apply it. Render will give your copy its own public `onrender.com` URL.
-
-Judges can use the live demo link above without GitHub repo access. The source repo remains private.
+To create a separate Render copy, use the [Render Blueprint](https://dashboard.render.com/blueprint/new?repo=https://github.com/veraniemimaki/bloom-field-guide) and review the proposed resources and environment settings before applying. A visitor can try the live demo without GitHub access; the source repository remains private.
 
 ## Current status
 
