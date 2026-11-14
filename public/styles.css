@@ -298,3 +298,18 @@ body:not(.aurora-theme) .recipe-detail strong{color:#3f5143}
   .recipe-card,.trial-card{padding:18px}
 }
 @media(prefers-reduced-motion:reduce){.signal-option,.play-button{transition:none}.signal-option:hover,.play-button:hover{transform:none}.sound-controls.is-playing .play-button{animation:none}}
+
+/* Keep optional field-journal controls visible and avoid expensive blur work. */
+.manual-context{display:block;margin:22px 0 10px;padding:0;border:0;border-radius:0;background:transparent;overflow:visible}
+.manual-context-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 11px}
+.manual-context-heading h2{margin:2px 0 0;font:600 19px Manrope,system-ui,sans-serif;letter-spacing:-.025em;color:var(--ink)}
+.manual-context-heading>p{max-width:260px;margin:0;color:var(--muted);font-size:11px;line-height:1.5}
+.manual-context-copy{display:none}
+.manual-context .choice-grid{margin:0}
+.manual-context .support-option-field,.manual-context .actions{margin-left:0;margin-right:0}
+.manual-context .actions{padding-bottom:0}
+.manual-context>summary{display:none}
+.scene-switch{backdrop-filter:none}
+.aurora-ribbon{filter:blur(8px);mix-blend-mode:normal;opacity:.68}
+body.aurora-theme .aurora-ribbon{animation-duration:30s}
+@media(max-width:620px){.manual-context-heading{align-items:flex-start;flex-direction:column;gap:5px}.manual-context-heading>p{max-width:unset}}
