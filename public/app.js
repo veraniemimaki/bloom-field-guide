@@ -92,21 +92,11 @@ function render() {
   });
   bindScreen();
 }
-function renderJourneyProgress(activeStep) {
-  const steps = [
-    ['notice', 'Notice'],
-    ['compare', 'Compare'],
-    ['keep', 'Keep']
-  ];
-  const current = Math.max(0, steps.findIndex(([id]) => id === activeStep));
-  return `<ol class="journey-progress" aria-label="Step ${current + 1} of 3: ${steps[current][1]}">${steps.map(([id, label], index) => `<li class="${id === activeStep ? 'current' : index < current ? 'complete' : ''}" ${id === activeStep ? 'aria-current="step"' : ''}><span class="journey-number">${String(index + 1).padStart(2, '0')}</span><span>${label}</span></li>`).join('')}</ol>`;
-}
 function renderStart() {
   const supportOption = state.context ? (supportOptions[state.context] || '') : '';
-  return `<div class="welcome-copy"><p class="step-label">A TWO-MINUTE SENSORY EXPERIMENT</p>
-    <h1>Find a reset that feels like yours.</h1>
-    <p class="lead">Start with how this moment feels. Then compare two gentle sounds.</p></div>
-    ${renderJourneyProgress('notice')}
+  return `<p class="step-label">A two-minute sensory experiment · 1 of 3</p>
+    <h1>What would feel useful right now?</h1>
+    <p class="lead">Choose a moment, then compare two versions of the sound. The forest or northern-lights scene is a visual backdrop only.</p>
     <section class="signal-panel" aria-labelledby="signal-heading">
       <div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">YOUR CHOICE</span></div>
       <p class="signal-copy"><strong>${escapeHtml(demoSignals[state.signal].detail)}</strong><br>Choose an example, describe the moment in your own words, or skip the check-in. No phone or wearable sensors are read.</p>
@@ -118,12 +108,10 @@ function renderStart() {
     </section>
     ${renderLearningLedger()}
     <div class="start-links"><button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a fictional returning-user example <span aria-hidden="true">↗</span></button>${hasPersonalGuide() ? '<button class="secondary-button sample-button" id="personal-guide-button" type="button">Open my field guide <span aria-hidden="true">→</span></button>' : ''}</div>
-    <section class="manual-context" aria-labelledby="manual-context-title"><div class="manual-context-heading"><div><p class="eyebrow">ANOTHER WAY IN</p><h2 id="manual-context-title">Choose a moment yourself</h2></div><p>Pick a setting and begin without a suggestion.</p></div>
-<div class="choice-grid">${contexts.map(c => `<button class="choice-card ${state.context === c.id ? 'selected' : ''}" data-context="${c.id}" type="button"><span class="choice-icon">${c.icon}</span><span><span class="choice-title">${c.title}</span><span class="choice-sub">${c.sub}</span></span></button>`).join('')}</div>
+    <div class="choice-grid">${contexts.map(c => `<button class="choice-card ${state.context === c.id ? 'selected' : ''}" data-context="${c.id}" type="button"><span class="choice-icon">${c.icon}</span><span><span class="choice-title">${c.title}</span><span class="choice-sub">${c.sub}</span></span></button>`).join('')}</div>
     ${state.context ? `<label class="support-option-field" for="support-option"><span class="support-option-title">Your own real-world cue <span>(optional)</span></span><textarea id="support-option" maxlength="160" placeholder="${state.context === 'wind-down' ? 'For example: settle somewhere comfortable' : state.context === 'reset' ? 'For example: notice your feet on the floor' : 'For example: look outside from where you are'}">${escapeHtml(supportOption)}</textarea><span class="privacy-note">Saved only on this device. You can change or remove it anytime.</span></label>` : ''}
     <div class="actions"><button class="primary-button" id="begin-button" type="button" ${state.context ? '' : 'disabled'}>Begin the experience <span aria-hidden="true">→</span></button><button class="text-button" id="skip-button" type="button">Not now</button></div>
-</section>
-
+    <p class="privacy-note">The example uses fictional responses and won’t be saved as your notes.</p>`;
 }
 function renderLearningLedger() {
   const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
@@ -143,11 +131,11 @@ function renderLearningLedger() {
 function renderTrial() {
   const variant = sessionVariants()[state.index];
   const step = state.index + 1;
-  return `<p class="step-label">${getChoice(contexts, state.context).title} · ${step} of 2</p>${renderJourneyProgress('compare')}
+  return `<p class="step-label">${getChoice(contexts, state.context).title} · ${step} of 2</p>
     <h1>Notice how this version feels.</h1>
     <p class="lead">Take a few seconds, or skip ahead whenever you like. There’s no right response.</p>
     <div class="trial-card"><div class="trial-head"><div><p class="eyebrow">SOUND ${step}</p><h2>${variant.title}</h2><p>${variant.description}</p></div><span class="variant-pill">${step === 1 ? 'Version A' : 'Version B'}</span></div>
-      <div class="sound-controls ${playing ? 'is-playing' : ''}"><button class="play-button" id="play-button" type="button" aria-label="${playing ? 'Pause sound' : 'Play sound'}">${playing ? 'Ⅱ' : '▶'}</button><div class="sound-meta"><strong>${variant.title} ambience</strong><span>Generated in this browser · level is shared across both sounds</span></div><label class="trial-volume-control" for="trial-sound-level"><span>Level</span><select id="trial-sound-level"><option value="soft" ${state.soundLevel === 'soft' ? 'selected' : ''}>Very soft</option><option value="gentle" ${state.soundLevel === 'gentle' ? 'selected' : ''}>Gentle</option><option value="fuller" ${state.soundLevel === 'fuller' ? 'selected' : ''}>A little fuller</option></select></label><span class="sound-status" id="sound-status">${playing ? 'Playing' : 'Ready'}</span></div>
+      <div class="sound-controls"><button class="play-button" id="play-button" type="button" aria-label="Play sound">${playing ? 'Ⅱ' : '▶'}</button><div class="sound-meta"><strong>${variant.title} ambience</strong><span>Generated in this browser · level is shared across both sounds</span></div><label class="trial-volume-control" for="trial-sound-level"><span>Level</span><select id="trial-sound-level"><option value="soft" ${state.soundLevel === 'soft' ? 'selected' : ''}>Very soft</option><option value="gentle" ${state.soundLevel === 'gentle' ? 'selected' : ''}>Gentle</option><option value="fuller" ${state.soundLevel === 'fuller' ? 'selected' : ''}>A little fuller</option></select></label><span class="sound-status" id="sound-status">${playing ? 'Playing' : 'Ready'}</span></div>
       <p class="feedback-label">How did it feel for you?</p><div class="feedback-grid">${feedback.map(f => `<button class="feedback-button" data-feedback="${f.id}" type="button"><span>${f.icon}</span>${f.label}</button>`).join('')}</div>
       <button class="quiet-link" id="skip-trial" type="button">Skip this version</button>
     </div>`;
@@ -421,7 +409,7 @@ function renderRecipe() {
     reset: 'If it suits you, pause and notice your feet on the floor.',
     outside: 'If it suits you, look outside from where you are; stepping out is optional.'
   }[state.context];
-  return `<p class="step-label">${state.previewSample ? 'Fictional example · sample history' : 'Your field note · saved on this device'}</p>${renderJourneyProgress('keep')}<h1>${hasSupportiveSignal ? 'A reset you can make your own.' : 'Nothing stood out as supportive yet.'}</h1>
+  return `<p class="step-label">${state.previewSample ? 'Fictional example · sample history' : 'Your field note · saved on this device'}</p><h1>${hasSupportiveSignal ? 'A reset you can make your own.' : 'Nothing stood out as supportive yet.'}</h1>
     <p class="lead">${hasSupportiveSignal ? 'BLOOM keeps your response visible, so you can decide whether this recipe belongs in your field guide.' : 'That feedback is useful too. You don’t have to reuse something that didn’t feel supportive.'}</p>
     <div class="recipe-card">${hasSupportiveSignal ? `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>${best.title} ${selectedScene === 'aurora' ? 'beneath the northern lights' : 'in the forest'}</h2></div><span class="recipe-count">${best.count} ${best.count === 1 ? 'try' : 'tries'}</span></div>
       <div class="recipe-detail"><span class="mini-icon">${best.icon}</span><div><strong>${best.title}</strong><span>Forest scene · sound only</span></div></div>` : `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>No sound selected</h2></div></div>`}
@@ -616,30 +604,8 @@ function setScene(scene) {
 }
 document.querySelectorAll('[data-scene]').forEach(button => button.addEventListener('click', () => setScene(button.dataset.scene)));
 document.getElementById('cloudinary-upload-button')?.addEventListener('click', openCloudinaryUpload);
-let cloudinaryScriptPromise = null;
-function loadCloudinaryWidget() {
-  if (window.cloudinary?.createUploadWidget) return Promise.resolve();
-  if (!cloudinaryScriptPromise) {
-    cloudinaryScriptPromise = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://upload-widget.cloudinary.com/latest/global/all.js';
-      script.async = true;
-      script.onload = resolve;
-      script.onerror = () => reject(new Error('Cloudinary upload widget failed to load.'));
-      document.head.appendChild(script);
-    });
-  }
-  return cloudinaryScriptPromise;
-}
-async function openCloudinaryUpload() {
-  if (!cloudinaryConfig.cloudName || !cloudinaryConfig.unsignedUploadPreset) return;
-  try {
-    await loadCloudinaryWidget();
-  } catch {
-    alert('The optional image uploader could not load. The forest and northern-lights scenes still work.');
-    return;
-  }
-  if (!window.cloudinary?.createUploadWidget) return;
+function openCloudinaryUpload() {
+  if (!cloudinaryConfig.cloudName || !cloudinaryConfig.unsignedUploadPreset || !window.cloudinary?.createUploadWidget) return;
   cloudinaryWidget ||= window.cloudinary.createUploadWidget({
     cloudName: cloudinaryConfig.cloudName,
     uploadPreset: cloudinaryConfig.unsignedUploadPreset,
