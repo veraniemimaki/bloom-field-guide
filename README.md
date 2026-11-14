@@ -31,7 +31,7 @@ The current version is a static browser app with no build step or API keys requi
 3. Open <http://localhost:8000>.
 4. Choose a context and try both sound variations, or preview the fictional returning-user example.
 
-Field notes are stored only in the browser and device where they were entered, using local storage.
+Field notes and optional support cues are stored only in the browser and device where they were entered, using local storage.
 
 ## Recreate on Render
 
@@ -43,7 +43,8 @@ Judges can use the live demo link above without GitHub repo access. The source r
 
 ## Current status
 
-- Working demo flow: context → two sound variations → feedback → recipe.
+- Working demo flow: context → optional personal support cue → two sound variations → feedback → recipe.
+- A recipe only recommends a sound when at least one saved response says it felt better; skips, neutral responses, and negative responses do not create a false favorite.
 - Fictional returning-user example is kept separate from personal field notes.
 - Sponsor services are not connected yet. Planned integrations are optional ElevenLabs narration, Gemini preference parsing, Cloudinary media delivery, and Aiven persistence. Gemma on Modal is a stretch goal.
 - The illustrated forest and procedural sounds are prototype assets.
