@@ -78,3 +78,8 @@ The API now has an optional Aiven PostgreSQL connection for community posts and 
 This is groundwork only. The live Community tab remains a local prototype until an Aiven service and its credentials are configured and the frontend is connected. Gemini moderation is not connected; API-submitted posts are held pending human review. Only approved posts are returned publicly. Do not put credentials in Git or submit real health information.
 
 Aiven's Node.js connection guidance uses the `pg` package and its PostgreSQL guidance describes the TLS CA requirements: [Aiven Node.js connection guide](https://aiven.io/docs/products/postgresql/howto/connect-node), [Aiven TLS certificates](https://aiven.io/docs/platform/concepts/tls-ssl-certificates).
+
+
+## Cloudinary scene images
+
+The optional scene-image control uses Cloudinary's Upload Widget for a user-selected landscape, then delivers a responsive crop with `c_fill,g_auto,w_1400,h_420,q_auto,f_auto`. The upload controls appear after `public/cloudinary-config.js` has a Cloudinary cloud name and an unsigned upload preset. Configure the preset to accept only JPG/PNG/WebP, use a dedicated `bloom-scenes` folder, and prevent overwrites. The cloud name and preset name are public identifiers; never put an API secret in frontend code. Upload only non-sensitive images you have permission to use; unsigned uploads create publicly deliverable assets. The existing CSS forest and aurora backdrops work without Cloudinary.
