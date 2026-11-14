@@ -208,3 +208,14 @@ body.aurora-theme .care-request-summary{background:#25283e;color:#e8e9f8}
 body.aurora-theme .gentle-support-note{background:#2c293b;border-color:#51465c}
 body.aurora-theme .support-dialog a{color:#b8d8ef}
 @media(max-width:620px){.reminder-heading{flex-direction:column}.reminder-fields{grid-template-columns:1fr 1fr}.care-request-card{align-items:flex-start;flex-direction:column}}
+
+
+/* Clear, immediate feedback-to-suggestion loop */
+.adaptive-suggestion{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:18px 0;padding:18px 20px;border:1px solid #d9c9b4;border-left:4px solid #b58152;border-radius:16px;background:linear-gradient(120deg,#fbf7ef,#f2f5ed);box-shadow:0 10px 30px #263b2610}
+.adaptive-suggestion h2{margin:3px 0 7px;font:600 18px Manrope,sans-serif;color:var(--ink)}
+.adaptive-suggestion p:not(.eyebrow):not(.privacy-note){max-width:560px;margin:0;color:var(--ink);font-size:12px;line-height:1.6}
+.adaptive-suggestion .privacy-note{margin:6px 0 0}
+.adaptive-actions{display:flex;flex-direction:column;align-items:stretch;gap:7px;flex:none}
+.adaptive-actions .primary-button,.adaptive-actions .secondary-button{white-space:nowrap}
+body.aurora-theme .adaptive-suggestion{background:linear-gradient(125deg,#29253d,#1d3042);border-color:#516177}
+@media(max-width:650px){.adaptive-suggestion{align-items:stretch;flex-direction:column}.adaptive-actions{align-items:stretch}.adaptive-actions .primary-button,.adaptive-actions .secondary-button{white-space:normal}}
