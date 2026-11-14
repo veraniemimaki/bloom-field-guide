@@ -47,7 +47,7 @@ Judges can use the live demo link above without GitHub repo access. The source r
 ## Current status
 
 - Demo flow: self-reported check-in or optional description → local, explainable suggestion informed by saved feedback → two generated sound variations with a shared intensity setting → user rating → personal sensory field guide.
-- Saved ratings can personalize a future suggestion for the same check-in category or moment. Optional six-second phone movement samples can also inform an explicitly labeled context cue and be compared with the user's later ratings; raw readings are discarded and measured samples stay separate from simulated examples.
+- Saved ratings can personalize a future suggestion for the same check-in category or moment. Optional six-second phone movement samples can inform an explicitly labeled context cue and be compared with the user's later ratings; raw readings are discarded, measured samples stay separate from simulated examples, and a private 14-day panel shows the number of ratings without turning them into a clinical score.
 - Care team preview uses fictional data. The current user's local notes are shown separately and downloaded only after they choose.
 - Check-in descriptions are never saved or sent; only the matched category and ratings are stored in this browser.
 - Aiven PostgreSQL powers shared Community posts and the protected human-review queue. Gemini moderation and Cloudinary media delivery are not connected yet; the forest and aurora scenes remain local CSS visuals.
