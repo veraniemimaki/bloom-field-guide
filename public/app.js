@@ -27,7 +27,7 @@ const sampleNotes = [
 
 let notes = loadNotes();
 let supportOptions = loadSupportOptions();
-let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, followUps: {}, followUpDraft: 'Hi, I saw that you asked for a check-in. Would you like to share how things have been going, or would you prefer to talk at your next appointment?', followUpNotice: '', communityTab: 'room', communityMessage: '', communityConsent: false, communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '' };
+let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, momentDescription: '', motionSignal: null, motionSource: null, motionStatus: 'No phone movement sample taken.', sessionMotionSignal: null, followUps: {}, followUpDraft: 'Hi, I saw that you asked for a check-in. Would you like to share how things have been going, or would you prefer to talk at your next appointment?', followUpNotice: '', communityTab: 'room', communityMessage: '', communityConsent: false, communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '' };
 const demoSignals = {
   restless: { label: 'Restless night', detail: 'A self-reported demo check-in: sleep felt unsettled.', context: 'wind-down', variant: 'wind', reason: 'A quieter wind-down moment may be worth trying after a restless night.' },
   overloaded: { label: 'Too much going on', detail: 'A self-reported demo check-in: the moment feels busy or overstimulating.', context: 'reset', variant: 'leaves', reason: 'A brief pause with a lighter leaf sound may be worth trying when things feel busy.' },
@@ -91,7 +91,8 @@ function renderStart() {
       <div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">YOUR CHOICE</span></div>
       <p class="signal-copy"><strong>${escapeHtml(demoSignals[state.signal].detail)}</strong><br>Choose an example, describe the moment in your own words, or skip the check-in. No phone or wearable sensors are read.</p>
       <div class="signal-options">${Object.entries(demoSignals).map(([id, item]) => `<button class="signal-option ${state.signal === id ? 'selected' : ''}" data-signal="${id}" type="button" aria-pressed="${state.signal === id}">${item.label}</button>`).join('')}</div>
-      <label class="moment-field" for="moment-description"><span>Or describe what feels noticeable <span>(optional)</span></span><textarea id="moment-description" maxlength="160" placeholder="For example: indoors, tired, and wanting something steady"></textarea><small>Read locally in this page only; not saved or sent. Avoid names or medical details.</small></label>
+      <section class="motion-cue-panel" aria-label="Optional phone movement context"><div><p class="eyebrow">OPTIONAL · PHONE MOVEMENT</p><strong>Use a short movement sample as context</strong><p>It can only describe device movement. It cannot tell how you feel. Readings stay in this page and aren’t saved or sent.</p></div><div class="motion-actions"><button class="secondary-button" id="motion-sample-button" type="button">Measure this phone for 6 seconds</button><button class="text-button" data-motion-demo="still" type="button">Preview sample: still</button><button class="text-button" data-motion-demo="moving" type="button">Preview sample: moving</button></div><p class="motion-status" id="motion-status" role="status">${escapeHtml(state.motionStatus)}${state.motionSignal ? ` · ${state.motionSource === 'simulated' ? 'simulated' : 'measured'} cue: ${state.motionSignal === 'moving' ? 'movement detected' : 'little movement detected'}` : ''}</p></section>
+      <label class="moment-field" for="moment-description"><span>Or describe what feels noticeable <span>(optional)</span></span><textarea id="moment-description" maxlength="160" placeholder="For example: indoors, tired, and wanting something steady">${escapeHtml(state.momentDescription)}</textarea><small>Read locally in this page only; not saved or sent. Avoid names or medical details.</small></label>
       <button class="secondary-button" id="suggest-button" type="button">Shape a sensory experiment</button>
       ${state.suggestion ? `<div class="suggestion-card"><p class="eyebrow">A STARTING POINT TO CONSIDER</p><p class="suggestion-edit-label">Moment</p><select id="suggestion-context" class="suggestion-select">${contexts.map(item => `<option value="${item.id}" ${item.id === state.suggestion.context ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p class="suggestion-edit-label">Sound to try first</p><select id="suggestion-variant" class="suggestion-select">${variants.map(item => `<option value="${item.id}" ${item.id === state.suggestion.variant ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p>${escapeHtml(state.suggestion.reason)}</p>${state.suggestion.variantEdited ? `<p class="edit-note">You changed the first sound to ${escapeHtml(getChoice(variants,state.suggestion.variant).title)}.</p>` : ''}<div class="suggestion-actions"><button class="primary-button" id="use-suggestion-button" type="button">Try this suggestion</button><button class="text-button" id="clear-suggestion-button" type="button">Clear suggestion</button></div></div>` : ''}
       <p class="privacy-note">Suggestions use transparent keyword rules and your saved ratings. They are exploratory, not a reading of your mental state or clinical recommendations.</p>
@@ -126,6 +127,61 @@ function interpretMoment(text) {
   ];
   return rules.find(rule => rule.pattern.test(words)) || null;
 }
+function setMotionCue(signal, source) {
+  state.motionSignal = signal;
+  state.motionSource = source;
+  state.motionStatus = source === 'simulated' ? 'Preview sample selected. This is not a live sensor reading.' : 'Phone movement sample completed. Raw readings were discarded.';
+  render();
+}
+async function capturePhoneMovement() {
+  const status = document.getElementById('motion-status');
+  const button = document.getElementById('motion-sample-button');
+  const motionApi = window.DeviceMotionEvent;
+  if (!motionApi) {
+    state.motionStatus = 'This browser did not provide phone movement data. Use the clearly labeled preview sample for the demo.';
+    render();
+    return;
+  }
+  try {
+    if (typeof motionApi.requestPermission === 'function') {
+      const permission = await motionApi.requestPermission();
+      if (permission !== 'granted') throw new Error('Permission was not granted.');
+    }
+  } catch {
+    state.motionStatus = 'Phone movement access was not granted. Nothing was collected.';
+    render();
+    return;
+  }
+  if (button) button.disabled = true;
+  if (status) status.textContent = 'Measuring phone movement for 6 seconds…';
+  let previous = null;
+  let changes = 0;
+  let samples = 0;
+  const onMotion = event => {
+    const value = event.acceleration || event.accelerationIncludingGravity;
+    if (!value || value.x == null || value.y == null || value.z == null) return;
+    const current = [value.x, value.y, value.z];
+    if (previous) {
+      changes += Math.hypot(current[0]-previous[0], current[1]-previous[1], current[2]-previous[2]);
+      samples++;
+    }
+    previous = current;
+  };
+  window.addEventListener('devicemotion', onMotion, { passive: true });
+  await new Promise(resolve => setTimeout(resolve, 6000));
+  window.removeEventListener('devicemotion', onMotion);
+  if (button) button.disabled = false;
+  if (!samples) {
+    state.motionStatus = 'No movement samples arrived. Use a phone with motion sensors or choose a labeled preview sample.';
+    render();
+    return;
+  }
+  const moving = changes / samples > 0.35;
+  state.motionSignal = moving ? 'moving' : 'still';
+  state.motionSource = 'measured';
+  state.motionStatus = 'Phone movement sample completed. Raw readings were discarded.';
+  render();
+}
 function rankForCheckin(contextId, checkinTag) {
   const entries = notes.filter(note => note.context === contextId && note.checkin === checkinTag);
   return variants.map(variant => {
@@ -138,15 +194,20 @@ function buildSuggestion(signalId, contextId = demoSignals[signalId].context, mo
   const context = getChoice(contexts, contextId);
   const taggedRank = momentMatch ? rankForCheckin(contextId, momentMatch.tag) : [];
   const taggedPreference = taggedRank.find(variant => variant.positive > 0);
+  const movementEntries = state.motionSignal ? notes.filter(note => note.context === contextId && note.motionSignal === state.motionSignal) : [];
+  const movementRank = variants.map(variant => { const matches = movementEntries.filter(note => note.variant === variant.id); return { ...variant, count: matches.length, positive: matches.filter(note => note.response === 'better').length }; }).sort((a,b) => b.positive-a.positive || b.count-a.count);
+  const movementPreference = movementRank.find(variant => variant.positive > 0);
   const contextPreference = rankVariants(contextId).find(variant => variant.positive > 0);
-  const preferred = taggedPreference || contextPreference;
+  const preferred = taggedPreference || movementPreference || contextPreference;
   const defaultVariant = momentMatch?.context === contextId
     ? getChoice(variants, momentMatch.variant)
     : contextId === signal.context ? getChoice(variants, signal.variant) : getChoice(variants, 'wind');
   const variant = preferred || defaultVariant;
   const historyReason = taggedPreference
     ? `In ${taggedPreference.positive} of ${taggedPreference.count} saved tries after similar check-ins, you marked ${taggedPreference.title.toLowerCase()} “felt better.”`
-    : contextPreference
+    : movementPreference
+      ? `In ${movementPreference.positive} of ${movementPreference.count} saved tries when the phone recorded ${state.motionSignal === 'moving' ? 'movement' : 'little movement'}, you marked ${movementPreference.title.toLowerCase()} “felt better.”`
+      : contextPreference
       ? `In ${contextPreference.positive} of ${contextPreference.count} saved ${context.title.toLowerCase()} tries, you marked ${contextPreference.title.toLowerCase()} “felt better.”`
       : 'There is not enough matching past feedback to identify a preference yet.';
   const inputReason = momentMatch
@@ -154,12 +215,13 @@ function buildSuggestion(signalId, contextId = demoSignals[signalId].context, mo
     : descriptionEntered
       ? `No matching keywords were found, so BLOOM used your “${signal.label.toLowerCase()}” check-in instead.`
       : `You chose the “${signal.label.toLowerCase()}” check-in.`;
+  const movementReason = state.motionSignal ? ` A 6-second ${state.motionSource === 'simulated' ? 'simulated' : 'phone'} sample recorded ${state.motionSignal === 'moving' ? 'movement' : 'little movement'}; this is only context, not a mood or health reading.` : '';
   return {
     context: contextId,
     variant: variant.id,
     checkinTag: momentMatch?.tag || signalId,
     matchDescription: momentMatch?.phrase || '',
-    reason: `${inputReason} ${historyReason} This is an exploratory starting point, not a prediction.`
+    reason: `${inputReason}${movementReason} ${historyReason} This is an exploratory starting point, not a prediction.`
   };
 }
 function classifyCommunityMessage(text) {
@@ -294,7 +356,8 @@ function renderPersonalSummary() {
         const response = getChoice(feedback, entry.response)?.label || entry.response;
         const checkin = entry.checkin && demoSignals[entry.checkin] ? ` · Check-in: ${demoSignals[entry.checkin].label}` : '';
         const level = entry.soundLevel ? ` · ${entry.soundLevel} volume` : '';
-        return `<article class="summary-row"><div><strong>${escapeHtml(context)} · ${escapeHtml(variant)}</strong><span>${escapeHtml(response || 'No rating')}${escapeHtml(checkin)}${escapeHtml(level)}</span></div><time>${new Date(entry.at).toLocaleDateString()}</time></article>`;
+        const motion = entry.motionSignal ? ` · phone movement: ${entry.motionSignal}${entry.motionSource === 'simulated' ? ' (sample)' : ''}` : '';
+        return `<article class="summary-row"><div><strong>${escapeHtml(context)} · ${escapeHtml(variant)}</strong><span>${escapeHtml(response || 'No rating')}${escapeHtml(checkin)}${escapeHtml(motion)}${escapeHtml(level)}</span></div><time>${new Date(entry.at).toLocaleDateString()}</time></article>`;
       }).join('')
     : '<div class="empty-note">No rated experiences saved here yet. Try an experience and choose a response; your notes will appear here.</div>';
   return `<p class="step-label">Your notes · stored in this browser</p><h1>A summary you choose whether to share.</h1>
@@ -388,7 +451,8 @@ function renderRecipe() {
     <div class="recipe-card">${hasSupportiveSignal ? `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>${best.title} ${selectedScene === 'aurora' ? 'beneath the northern lights' : 'in the forest'}</h2></div><span class="recipe-count">${best.count} ${best.count === 1 ? 'try' : 'tries'}</span></div>
       <div class="recipe-detail"><span class="mini-icon">${best.icon}</span><div><strong>${best.title}</strong><span>Forest scene · sound only</span></div></div>` : `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>No sound selected</h2></div></div>`}
       <div class="evidence"><strong>${state.previewSample ? 'What the sample notes say' : 'What your notes say'}</strong><br>${evidence}${state.previewSample ? '<br><span class="privacy-note">Fictional example only—not a real person’s history.</span>' : ''}</div>
-      ${state.sessionSignal ? `<div class="real-world"><strong>Your check-in</strong><p>${escapeHtml(demoSignals[state.sessionSignal]?.label || '')} · self-reported</p></div>` : ''}
+      ${state.sessionSignal ? `<div class="real-world"><strong>Your check-in</strong><p>${escapeHtml(demoSignals[state.sessionSignal]?.label || state.sessionSignal)} · self-reported</p></div>` : ''}
+      ${state.sessionMotionSignal ? `<div class="real-world"><strong>Optional movement context</strong><p>${state.sessionMotionSignal === 'moving' ? 'Movement detected' : 'Little movement detected'} · ${state.motionSource === 'simulated' ? 'simulated sample' : 'brief phone sample'}; not a mood reading</p></div>` : ''}
       ${supportOption ? `<div class="real-world"><strong>Your optional real-world cue</strong><p>${escapeHtml(supportOption)}</p></div>` : ''}
       ${hasSupportiveSignal ? `<div class="real-world"><strong>An optional cue for this moment</strong><p>${takeAlong}</p></div>` : ''}
       ${state.session.some(x => x.skipped) ? '<p class="privacy-note">Skipped versions weren’t counted as feedback.</p>' : ''}
@@ -453,8 +517,12 @@ function bindScreen() {
   document.getElementById('copy-followup-button')?.addEventListener('click', copyFollowUpDraft);
   document.querySelectorAll('[data-signal]').forEach(button => button.addEventListener('click', () => { state.signal = button.dataset.signal; state.suggestion = null; state.momentMatch = null; state.descriptionEntered = false; render(); }));
   document.getElementById('trial-sound-level')?.addEventListener('change', event => { state.soundLevel = event.target.value; stopSound(); render(); });
+  document.querySelectorAll('[data-motion-demo]').forEach(button => button.addEventListener('click', () => setMotionCue(button.dataset.motionDemo, 'simulated')));
+  document.getElementById('motion-sample-button')?.addEventListener('click', capturePhoneMovement);
+  document.getElementById('moment-description')?.addEventListener('input', event => { state.momentDescription = event.target.value.slice(0, 160); });
   document.getElementById('suggest-button')?.addEventListener('click', () => {
-    const description = document.getElementById('moment-description')?.value || '';
+    const description = document.getElementById('moment-description')?.value || state.momentDescription;
+    state.momentDescription = description.slice(0, 160);
     state.descriptionEntered = Boolean(description.trim());
     state.momentMatch = interpretMoment(description);
     state.suggestion = buildSuggestion(state.signal, state.momentMatch?.context || undefined, state.momentMatch, state.descriptionEntered);
@@ -462,7 +530,7 @@ function bindScreen() {
   });
   document.getElementById('suggestion-context')?.addEventListener('change', event => { state.suggestion = buildSuggestion(state.signal, event.target.value, state.momentMatch, state.descriptionEntered); render(); });
   document.getElementById('suggestion-variant')?.addEventListener('change', event => { state.suggestion.variant = event.target.value; state.suggestion.variantEdited = true; render(); });
-  document.getElementById('use-suggestion-button')?.addEventListener('click', () => { state.context = state.suggestion.context; state.previewSample = false; state.sessionSignal = state.suggestion.checkinTag; state.screen = 'trial'; state.firstVariant = state.suggestion.variant; state.index = 0; state.session = []; state.view = 'patient'; render(); });
+  document.getElementById('use-suggestion-button')?.addEventListener('click', () => { state.context = state.suggestion.context; state.previewSample = false; state.sessionSignal = state.suggestion.checkinTag; state.sessionMotionSignal = state.motionSignal; state.screen = 'trial'; state.firstVariant = state.suggestion.variant; state.index = 0; state.session = []; state.view = 'patient'; render(); });
   document.getElementById('clear-suggestion-button')?.addEventListener('click', () => { state.suggestion = null; state.momentMatch = null; state.descriptionEntered = false; render(); });
   document.getElementById('download-summary-button')?.addEventListener('click', downloadCareSummary);
   document.querySelectorAll('[data-context]').forEach(button => button.addEventListener('click', () => { state.context = button.dataset.context; render(); }));
@@ -478,7 +546,7 @@ function bindScreen() {
     supportOptions[state.context] = event.target.value.slice(0, 160);
     saveSupportOptions();
   });
-  document.getElementById('begin-button')?.addEventListener('click', () => { state.previewSample = false; state.sessionSignal = null; state.firstVariant = null; state.screen = 'trial'; state.index = 0; state.session = []; render(); });
+  document.getElementById('begin-button')?.addEventListener('click', () => { state.previewSample = false; state.sessionSignal = null; state.sessionMotionSignal = state.motionSignal; state.firstVariant = null; state.screen = 'trial'; state.index = 0; state.session = []; render(); });
   document.getElementById('sample-journey-button')?.addEventListener('click', () => { state.previewSample = true; state.context = 'wind-down'; state.screen = 'recipe'; render(); });
   document.getElementById('skip-button')?.addEventListener('click', () => { state.screen = 'recipe'; state.context ||= contexts[0].id; render(); });
   document.getElementById('play-button')?.addEventListener('click', toggleSound);
@@ -491,7 +559,7 @@ function bindScreen() {
 function recordResponse(response) {
   stopSound();
   const variant = sessionVariants()[state.index];
-  const entry = { id: crypto.randomUUID?.() || String(Date.now()), at: new Date().toISOString(), context: state.context, variant: variant.id, response, checkin: state.sessionSignal, soundLevel: state.soundLevel, skipped: response === null };
+  const entry = { id: crypto.randomUUID?.() || String(Date.now()), at: new Date().toISOString(), context: state.context, variant: variant.id, response, checkin: state.sessionSignal, motionSignal: state.sessionMotionSignal, motionSource: state.motionSource, soundLevel: state.soundLevel, skipped: response === null };
   state.session.push(entry);
   if (response) { notes.push(entry); saveNotes(); }
   if (state.index === 0) { state.index = 1; state.screen = 'trial'; }
