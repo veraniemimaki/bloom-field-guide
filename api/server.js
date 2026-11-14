@@ -7,6 +7,7 @@ import { GoogleGenAI } from "@google/genai";
 const port = Number(process.env.PORT || 10000);
 const allowedOrigins = new Set([
   "https://bloom-field-guide.onrender.com",
+  "https://bloomhuyaah.netlify.app",
   ...(process.env.CORS_ORIGIN || "http://localhost:8000")
     .split(",")
     .map(origin => origin.trim())

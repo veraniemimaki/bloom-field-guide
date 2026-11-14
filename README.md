@@ -45,6 +45,22 @@ The current version is a static browser app with no build step or API keys requi
 
 Field notes, check-in categories, and optional real-world cues stay in local storage on the browser and device where they were entered. Free-text descriptions are not saved.
 
+## Deploy the website on Netlify
+
+The frontend is a static site in `public/`. The root `netlify.toml` sets Netlify's publish directory to `public`; no build command or frontend dependency installation is needed.
+
+1. Import this GitHub repository into Netlify and select the `main` branch.
+2. Leave the base directory and build command blank. The publish directory is `public`.
+3. Deploy the site. For an existing Netlify project, clear any old base directory or build command overrides, then redeploy after pushing this configuration.
+
+For a manual drag-and-drop deployment, upload the `public/` folder itself, so `index.html` is at the deployment root.
+
+The Node API in `api/` is hosted separately on Render; Netlify only hosts the frontend. `public/app.js` points to `https://bloom-api-g7bg.onrender.com`. The API allows `https://bloomhuyaah.netlify.app`; redeploy the Render API after updating its source to enable requests from this site. For another frontend domain, add its exact origin to the API's `CORS_ORIGIN` environment variable (comma-separated, without a trailing slash).
+
+Database, moderator, and Gemini credentials belong on the Render API service. They are not needed to publish the static website and must never be added to `public/` or Netlify frontend assets. Community and image generation depend on the API and its configured integrations.
+
+If the homepage returns 404, inspect Netlify's deployed files: `index.html`, `app.js`, and `styles.css` should be at the top level, rather than inside a `public` subfolder.
+
 ## Recreate on Render
 
 The repo includes a Render Blueprint at [`render.yaml`](render.yaml), configured for this app (no build command; publish only the `public/` frontend folder, keeping server code outside the static site).

@@ -1,0 +1,4 @@
+[build]
+  publish = "public"
+
+# The browser app needs no build step. The Node API runs separately on Render.
