@@ -70,3 +70,11 @@ The browser app currently uses its own local rule-based interpreter and does not
 The Community tab is an interactive, single-browser prototype. It includes fictional peer notes, a mock rule-based moderation check, and a simulated human-review queue. Flagged posts stay hidden from the demo room until a reviewer approves or removes them in the UI.
 
 This is not a live chat: posts are not shared between visitors, Gemini is not connected, the review screen is not protected, and no professional is alerted. Use fictional messages only. A real release needs shared storage, authenticated reviewer access, Gemini moderation, staffed human review, and a reviewed escalation process.
+
+## Aiven PostgreSQL integration groundwork
+
+The API now has an optional Aiven PostgreSQL connection for community posts and the human-review queue. It reads `AIVEN_DATABASE_URL`, verifies TLS with `AIVEN_CA_CERT`, and uses `COMMUNITY_MODERATOR_TOKEN` to protect reviewer endpoints. The API creates the table and indexes from [`api/schema.sql`](api/schema.sql) when the database is configured; records expire after 30 days.
+
+This is groundwork only. The live Community tab remains a local prototype until an Aiven service and its credentials are configured and the frontend is connected. Gemini moderation is not connected; API-submitted posts are held pending human review. Only approved posts are returned publicly. Do not put credentials in Git or submit real health information.
+
+Aiven's Node.js connection guidance uses the `pg` package and its PostgreSQL guidance describes the TLS CA requirements: [Aiven Node.js connection guide](https://aiven.io/docs/products/postgresql/howto/connect-node), [Aiven TLS certificates](https://aiven.io/docs/platform/concepts/tls-ssl-certificates).
