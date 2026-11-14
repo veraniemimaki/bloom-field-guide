@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: bloom-field-guide
+    runtime: static
+    branch: main
+    buildCommand: ""
+    staticPublishPath: .
