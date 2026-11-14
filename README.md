@@ -94,8 +94,3 @@ The optional scene-image control uses Cloudinary's Upload Widget for a user-sele
 ## Winter sound profiles
 
 The northern-lights scene now offers two additional browser-generated sounds: **Snowfall hush** (soft, slowly wavering filtered noise) and **Distant ice chimes** (sparse, rounded synthesized tones). The forest keeps its wind and leaf pair. Ratings are saved with their scene and only inform later suggestions in that same scene, so northern-lights preferences do not get mixed with forest preferences. No audio service or API key is required.
-
-
-### Suggestions respond to repeated dislikes
-
-If the most recent rating for a sound is “felt worse” and at least two of that sound’s last three ratings in the past 14 days were negative, BLOOM immediately returns to its existing suggestion panel with an alternative. The same panel appears on a later visit when saved notes meet that rule. Repeatedly disliked forest sounds can switch the suggestion to a northern-lights sound. The existing **Try this suggestion** control launches it; no extra screen or buttons are added.
