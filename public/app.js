@@ -43,7 +43,17 @@ let soundTimer = null;
 let playing = false;
 
 function loadNotes() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); } catch { return []; }
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
+    if (!Array.isArray(stored)) return [];
+    const cleaned = stored.map(note => {
+      if (!note || typeof note !== 'object') return note;
+      const { motionSignal, motionSource, ...personalNote } = note;
+      return personalNote;
+    });
+    if (JSON.stringify(cleaned) !== JSON.stringify(stored)) localStorage.setItem(STORE_KEY, JSON.stringify(cleaned));
+    return cleaned;
+  } catch { return []; }
 }
 function saveNotes() { localStorage.setItem(STORE_KEY, JSON.stringify(notes)); }
 function loadSupportOptions() {
