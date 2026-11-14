@@ -1,5 +1,7 @@
 const STORE_KEY = 'bloom-field-notes-v1';
 const SUPPORT_STORE_KEY = 'bloom-support-options-v1';
+const CLOUDINARY_SCENE_KEY = 'bloom-cloudinary-scene-v1';
+const cloudinaryConfig = window.BLOOM_CLOUDINARY || {};
 const contexts = [
   { id: 'wind-down', title: 'Wind down', sub: 'A softer end to the day', icon: '☾' },
   { id: 'reset', title: 'Take a small pause', sub: 'A moment to reset', icon: '✳' },
@@ -36,6 +38,8 @@ const demoSignals = {
   setting: { label: 'By a window or outdoors', detail: 'A self-reported demo check-in: you are near a window or outdoors.', context: 'outside', variant: 'leaves', reason: 'A light nature-inspired sound may fit this setting; you can choose another option.' }
 };
 let selectedScene = 'forest';
+let customSceneUrl = localStorage.getItem(CLOUDINARY_SCENE_KEY) || '';
+let cloudinaryWidget = null;
 let audioContext = null;
 let soundNodes = [];
 let soundTimer = null;
@@ -67,6 +71,13 @@ function render() {
   document.getElementById('patient-view-button')?.classList.toggle('active', state.view === 'patient');
   document.getElementById('clinician-view-button')?.classList.toggle('active', state.view === 'clinician');
   document.getElementById('community-view-button')?.classList.toggle('active', state.view === 'community');
+  const configuredCloudinary = Boolean(cloudinaryConfig.cloudName && cloudinaryConfig.unsignedUploadPreset);
+  const uploadButton = document.getElementById('cloudinary-upload-button');
+  const customSceneButton = document.getElementById('custom-scene-option');
+  const cloudinaryNote = document.getElementById('cloudinary-privacy-note');
+  if (uploadButton) uploadButton.hidden = !configuredCloudinary;
+  if (customSceneButton) customSceneButton.hidden = !customSceneUrl;
+  if (cloudinaryNote) cloudinaryNote.hidden = !configuredCloudinary;
   document.querySelectorAll('[data-scene]').forEach(button => {
     const isSelected = button.dataset.scene === selectedScene;
     button.classList.toggle('active', isSelected);
@@ -419,16 +430,21 @@ function stopSound() {
 }
 
 function setScene(scene) {
-  if (!['forest', 'aurora'].includes(scene)) return;
+  if (!['forest', 'aurora', 'custom'].includes(scene) || (scene === 'custom' && !customSceneUrl)) return;
   selectedScene = scene;
+  const isCustom = scene === 'custom';
   document.body.classList.toggle('aurora-theme', scene === 'aurora');
   document.querySelector('meta[name="theme-color"]').content = scene === 'aurora' ? '#0c1427' : '#f3f7ef';
   const banner = document.getElementById('scene-banner');
   banner.classList.toggle('forest-scene', scene === 'forest');
   banner.classList.toggle('aurora-scene', scene === 'aurora');
-  document.getElementById('scene-title').textContent = scene === 'forest' ? 'A forest, just after rain' : 'Northern lights, moving quietly';
-  document.getElementById('scene-eyebrow').textContent = scene === 'forest' ? 'A MOMENT TO YOURSELF' : 'A DIFFERENT VIEW, SAME SOUND EXPERIMENT';
-  banner.setAttribute('aria-label', scene === 'forest' ? 'Forest visual backdrop' : 'Northern lights visual backdrop');
+  banner.classList.toggle('cloudinary-scene', isCustom);
+  const backdrop = document.getElementById('cloudinary-backdrop');
+  backdrop.hidden = !isCustom;
+  if (isCustom) backdrop.src = customSceneUrl;
+  document.getElementById('scene-title').textContent = scene === 'forest' ? 'A forest, just after rain' : scene === 'aurora' ? 'Northern lights, moving quietly' : 'A scene you chose';
+  document.getElementById('scene-eyebrow').textContent = scene === 'forest' ? 'A MOMENT TO YOURSELF' : scene === 'aurora' ? 'A DIFFERENT VIEW, SAME SOUND EXPERIMENT' : 'YOUR PERSONAL VISUAL BACKDROP';
+  banner.setAttribute('aria-label', scene === 'forest' ? 'Forest visual backdrop' : scene === 'aurora' ? 'Northern lights visual backdrop' : 'User-selected Cloudinary visual backdrop');
   document.querySelectorAll('[data-scene]').forEach(button => {
     const isSelected = button.dataset.scene === scene;
     button.classList.toggle('active', isSelected);
@@ -436,6 +452,35 @@ function setScene(scene) {
   });
 }
 document.querySelectorAll('[data-scene]').forEach(button => button.addEventListener('click', () => setScene(button.dataset.scene)));
+document.getElementById('cloudinary-upload-button')?.addEventListener('click', openCloudinaryUpload);
+function openCloudinaryUpload() {
+  if (!cloudinaryConfig.cloudName || !cloudinaryConfig.unsignedUploadPreset || !window.cloudinary?.createUploadWidget) return;
+  cloudinaryWidget ||= window.cloudinary.createUploadWidget({
+    cloudName: cloudinaryConfig.cloudName,
+    uploadPreset: cloudinaryConfig.unsignedUploadPreset,
+    sources: ['local'],
+    multiple: false,
+    maxFileSize: 5 * 1024 * 1024,
+    clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
+    cropping: true,
+    croppingAspectRatio: 3.2,
+    showAdvancedOptions: false,
+    showUploadMoreButton: false
+  }, (error, result) => {
+    if (error || result?.event !== 'success') return;
+    const info = result.info;
+    const cloudName = cloudinaryConfig.cloudName;
+    const publicId = String(info.public_id || '').split('/').map(encodeURIComponent).join('/');
+    const version = encodeURIComponent(info.version);
+    customSceneUrl = `https://res.cloudinary.com/${encodeURIComponent(cloudName)}/image/upload/c_fill,g_auto,w_1400,h_420,q_auto,f_auto/v${version}/${publicId}`;
+    localStorage.setItem(CLOUDINARY_SCENE_KEY, customSceneUrl);
+    const button = document.getElementById('custom-scene-option');
+    if (button) button.hidden = false;
+    setScene('custom');
+  });
+  cloudinaryWidget.open();
+}
+
 document.getElementById('history-button').addEventListener('click', () => { renderHistory(); document.getElementById('history-dialog').showModal(); });
 document.getElementById('about-button').addEventListener('click', () => document.getElementById('about-dialog').showModal());
 document.getElementById('clear-button').addEventListener('click', () => { notes = []; saveNotes(); renderHistory(); });
