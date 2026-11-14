@@ -24,11 +24,12 @@ const sampleNotes = [
 
 let notes = loadNotes();
 let supportOptions = loadSupportOptions();
-let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, view: 'patient', signal: 'restless', suggestion: null, followUps: {} };
+let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, followUps: {} };
 const demoSignals = {
   restless: { label: 'Restless night', detail: 'A self-reported demo check-in: sleep felt unsettled.', context: 'wind-down', variant: 'wind', reason: 'A quieter wind-down moment may be worth trying after a restless night.' },
   overloaded: { label: 'Too much going on', detail: 'A self-reported demo check-in: the moment feels busy or overstimulating.', context: 'reset', variant: 'leaves', reason: 'A brief pause with a lighter leaf sound may be worth trying when things feel busy.' },
-  low: { label: 'Low energy', detail: 'A self-reported demo check-in: energy feels low today.', context: 'outside', variant: 'wind', reason: 'A gentle outdoor-feeling moment may be worth trying; you can choose another option.' }
+  low: { label: 'Low energy', detail: 'A self-reported demo check-in: energy feels low today.', context: 'reset', variant: 'wind', reason: 'A short, gentle pause may be worth trying; you can choose another option.' },
+  setting: { label: 'By a window or outdoors', detail: 'A self-reported demo check-in: you are near a window or outdoors.', context: 'outside', variant: 'leaves', reason: 'A light nature-inspired sound may fit this setting; you can choose another option.' }
 };
 let audioContext = null;
 let soundNodes = [];
@@ -67,12 +68,13 @@ function renderStart() {
     <h1>What would feel useful right now?</h1>
     <p class="lead">Choose a moment. We’ll explore two versions of the same forest scene, changing only the sound.</p>
     <section class="signal-panel" aria-labelledby="signal-heading">
-      <div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">DEMO EXAMPLES</span></div>
-      <p class="signal-copy"><strong>${escapeHtml(demoSignals[state.signal].detail)}</strong><br>Choose the example that fits, or skip the check-in. This prototype uses your choice and saved field notes; it does not read phone or wearable sensors.</p>
+      <div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">YOUR CHOICE</span></div>
+      <p class="signal-copy"><strong>${escapeHtml(demoSignals[state.signal].detail)}</strong><br>Choose an example, describe the moment in your own words, or skip the check-in. No phone or wearable sensors are read.</p>
       <div class="signal-options">${Object.entries(demoSignals).map(([id, item]) => `<button class="signal-option ${state.signal === id ? 'selected' : ''}" data-signal="${id}" type="button" aria-pressed="${state.signal === id}">${item.label}</button>`).join('')}</div>
-      <button class="secondary-button" id="suggest-button" type="button">Suggest a starting point</button>
-      ${state.suggestion ? `<div class="suggestion-card"><p class="eyebrow">A STARTING POINT TO CONSIDER</p><p class="suggestion-edit-label">Moment</p><select id="suggestion-context" class="suggestion-select">${contexts.map(item => `<option value="${item.id}" ${item.id === state.suggestion.context ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p class="suggestion-edit-label">Sound to try first</p><select id="suggestion-variant" class="suggestion-select">${variants.map(item => `<option value="${item.id}" ${item.id === state.suggestion.variant ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p>${escapeHtml(state.suggestion.reason)}</p><div class="suggestion-actions"><button class="primary-button" id="use-suggestion-button" type="button">Try this suggestion</button><button class="text-button" id="clear-suggestion-button" type="button">Clear suggestion</button></div></div>` : ''}
-      <p class="privacy-note">This is an illustrative rule-based demo, not a sensor reading or clinical recommendation. You can ignore it and choose any moment.</p>
+      <label class="moment-field" for="moment-description"><span>Or describe what feels noticeable <span>(optional)</span></span><textarea id="moment-description" maxlength="160" placeholder="For example: indoors, tired, and wanting something steady"></textarea><small>Read locally in this page only; not saved or sent. Avoid names or medical details.</small></label>
+      <button class="secondary-button" id="suggest-button" type="button">Shape a sensory experiment</button>
+      ${state.suggestion ? `<div class="suggestion-card"><p class="eyebrow">A STARTING POINT TO CONSIDER</p><p class="suggestion-edit-label">Moment</p><select id="suggestion-context" class="suggestion-select">${contexts.map(item => `<option value="${item.id}" ${item.id === state.suggestion.context ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p class="suggestion-edit-label">Sound to try first</p><select id="suggestion-variant" class="suggestion-select">${variants.map(item => `<option value="${item.id}" ${item.id === state.suggestion.variant ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p>${escapeHtml(state.suggestion.reason)}</p>${state.suggestion.variantEdited ? `<p class="edit-note">You changed the first sound to ${escapeHtml(getChoice(variants,state.suggestion.variant).title)}.</p>` : ''}<div class="suggestion-actions"><button class="primary-button" id="use-suggestion-button" type="button">Try this suggestion</button><button class="text-button" id="clear-suggestion-button" type="button">Clear suggestion</button></div></div>` : ''}
+      <p class="privacy-note">Suggestions use transparent keyword rules and your saved ratings. They are exploratory, not a reading of your mental state or clinical recommendations.</p>
     </section>
     <div class="start-links"><button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a fictional returning-user example <span aria-hidden="true">↗</span></button>${hasPersonalGuide() ? '<button class="secondary-button sample-button" id="personal-guide-button" type="button">Open my field guide <span aria-hidden="true">→</span></button>' : ''}</div>
     <div class="choice-grid">${contexts.map(c => `<button class="choice-card ${state.context === c.id ? 'selected' : ''}" data-context="${c.id}" type="button"><span class="choice-icon">${c.icon}</span><span><span class="choice-title">${c.title}</span><span class="choice-sub">${c.sub}</span></span></button>`).join('')}</div>
@@ -87,25 +89,58 @@ function renderTrial() {
     <h1>Notice how this version feels.</h1>
     <p class="lead">Take a few seconds, or skip ahead whenever you like. There’s no right response.</p>
     <div class="trial-card"><div class="trial-head"><div><p class="eyebrow">SOUND ${step}</p><h2>${variant.title}</h2><p>${variant.description}</p></div><span class="variant-pill">${step === 1 ? 'Version A' : 'Version B'}</span></div>
-      <div class="sound-controls"><button class="play-button" id="play-button" type="button" aria-label="Play sound">${playing ? 'Ⅱ' : '▶'}</button><div class="sound-meta"><strong>${variant.title} ambience</strong><span>Sound only · No voice</span></div><span class="sound-status" id="sound-status">${playing ? 'Playing' : 'Ready'}</span></div>
+      <div class="sound-controls"><button class="play-button" id="play-button" type="button" aria-label="Play sound">${playing ? 'Ⅱ' : '▶'}</button><div class="sound-meta"><strong>${variant.title} ambience</strong><span>Generated in this browser · level is shared across both sounds</span></div><label class="trial-volume-control" for="trial-sound-level"><span>Level</span><select id="trial-sound-level"><option value="soft" ${state.soundLevel === 'soft' ? 'selected' : ''}>Very soft</option><option value="gentle" ${state.soundLevel === 'gentle' ? 'selected' : ''}>Gentle</option><option value="fuller" ${state.soundLevel === 'fuller' ? 'selected' : ''}>A little fuller</option></select></label><span class="sound-status" id="sound-status">${playing ? 'Playing' : 'Ready'}</span></div>
       <p class="feedback-label">How did it feel for you?</p><div class="feedback-grid">${feedback.map(f => `<button class="feedback-button" data-feedback="${f.id}" type="button"><span>${f.icon}</span>${f.label}</button>`).join('')}</div>
       <button class="quiet-link" id="skip-trial" type="button">Skip this version</button>
     </div>`;
 }
 function sessionVariants() { return state.firstVariant ? [getChoice(variants, state.firstVariant), ...variants.filter(v => v.id !== state.firstVariant)] : variants; }
 function hasPersonalGuide() { return notes.length > 0 || Object.values(supportOptions).some(value => String(value || '').trim()); }
-function buildSuggestion(signalId, contextId = demoSignals[signalId].context) {
+function interpretMoment(text) {
+  const words = String(text || '').toLowerCase();
+  const rules = [
+    { tag: 'restless', pattern: /restless|sleep|bedtime|wind.?down|tired|exhausted|evening/, context: 'wind-down', variant: 'wind', phrase: 'rest, tiredness, or evening' },
+    { tag: 'overloaded', pattern: /busy|overwhelm|too much|crowd|noisy|noise|racing|tense|stressful/, context: 'reset', variant: 'leaves', phrase: 'a busy or overstimulating moment' },
+    { tag: 'setting', pattern: /outside|outdoors|fresh air|window|trees?|nature|open air/, context: 'outside', variant: 'leaves', phrase: 'a window-side or outdoor setting' },
+    { tag: 'low', pattern: /low energy|sluggish|drained|worn out/, context: 'reset', variant: 'wind', phrase: 'low energy' }
+  ];
+  return rules.find(rule => rule.pattern.test(words)) || null;
+}
+function rankForCheckin(contextId, checkinTag) {
+  const entries = notes.filter(note => note.context === contextId && note.checkin === checkinTag);
+  return variants.map(variant => {
+    const matches = entries.filter(note => note.variant === variant.id);
+    return { ...variant, count: matches.length, positive: matches.filter(note => note.response === 'better').length };
+  }).sort((a, b) => b.positive - a.positive || b.count - a.count);
+}
+function buildSuggestion(signalId, contextId = demoSignals[signalId].context, momentMatch = null, descriptionEntered = false) {
   const signal = demoSignals[signalId];
   const context = getChoice(contexts, contextId);
-  const ranked = rankVariants(contextId);
-  const preferred = ranked.find(variant => variant.positive > 0);
-  const variant = preferred || (contextId === signal.context ? getChoice(variants, signal.variant) : getChoice(variants, 'wind'));
-  const reason = preferred
-    ? `In ${preferred.positive} of ${preferred.count} saved ${context.title.toLowerCase()} tries, you marked ${preferred.title.toLowerCase()} “felt better.” This is a starting point, not a prediction.`
-    : ranked.some(item => item.count > 0)
-      ? `Your check-in was “${signal.label.toLowerCase()}.” You have not marked a sound “felt better” in ${context.title.toLowerCase()} yet, so this is an exploratory starting point.`
-      : `Your check-in was “${signal.label.toLowerCase()}.” There are no saved ratings for ${context.title.toLowerCase()} yet, so this is an exploratory starting point.`;
-  return { context: contextId, variant: variant.id, reason };
+  const taggedRank = momentMatch ? rankForCheckin(contextId, momentMatch.tag) : [];
+  const taggedPreference = taggedRank.find(variant => variant.positive > 0);
+  const contextPreference = rankVariants(contextId).find(variant => variant.positive > 0);
+  const preferred = taggedPreference || contextPreference;
+  const defaultVariant = momentMatch?.context === contextId
+    ? getChoice(variants, momentMatch.variant)
+    : contextId === signal.context ? getChoice(variants, signal.variant) : getChoice(variants, 'wind');
+  const variant = preferred || defaultVariant;
+  const historyReason = taggedPreference
+    ? `In ${taggedPreference.positive} of ${taggedPreference.count} saved tries after similar check-ins, you marked ${taggedPreference.title.toLowerCase()} “felt better.”`
+    : contextPreference
+      ? `In ${contextPreference.positive} of ${contextPreference.count} saved ${context.title.toLowerCase()} tries, you marked ${contextPreference.title.toLowerCase()} “felt better.”`
+      : 'There is not enough matching past feedback to identify a preference yet.';
+  const inputReason = momentMatch
+    ? `A local keyword rule matched words about ${momentMatch.phrase}, initially suggesting ${getChoice(contexts, momentMatch.context).title.toLowerCase()}.`
+    : descriptionEntered
+      ? `No matching keywords were found, so BLOOM used your “${signal.label.toLowerCase()}” check-in instead.`
+      : `You chose the “${signal.label.toLowerCase()}” check-in.`;
+  return {
+    context: contextId,
+    variant: variant.id,
+    checkinTag: momentMatch?.tag || signalId,
+    matchDescription: momentMatch?.phrase || '',
+    reason: `${inputReason} ${historyReason} This is an exploratory starting point, not a prediction.`
+  };
 }
 function renderClinician() {
   const entries = [...notes].reverse();
@@ -115,7 +150,8 @@ function renderClinician() {
         const variant = getChoice(variants, entry.variant)?.title || entry.variant;
         const response = getChoice(feedback, entry.response)?.label || entry.response;
         const checkin = entry.checkin && demoSignals[entry.checkin] ? ` · Check-in: ${demoSignals[entry.checkin].label}` : '';
-        return `<article class="summary-row"><div><strong>${escapeHtml(context)} · ${escapeHtml(variant)}</strong><span>${escapeHtml(response || 'No rating')} ${checkin ? escapeHtml(checkin) : ''}</span></div><time>${new Date(entry.at).toLocaleDateString()}</time></article>`;
+        const level = entry.soundLevel ? ` · ${entry.soundLevel} volume` : '';
+        return `<article class="summary-row"><div><strong>${escapeHtml(context)} · ${escapeHtml(variant)}</strong><span>${escapeHtml(response || 'No rating')}${escapeHtml(checkin)}${escapeHtml(level)}</span></div><time>${new Date(entry.at).toLocaleDateString()}</time></article>`;
       }).join('')
     : '<div class="empty-note">No rated experiences saved here yet. Try an experience and choose a response; your notes will appear here.</div>';
   return `<p class="step-label">Your notes · stored in this browser</p><h1>A summary you choose whether to share.</h1>
@@ -198,7 +234,8 @@ function downloadCareSummary() {
     const variant = getChoice(variants, entry.variant)?.title || entry.variant;
     const response = getChoice(feedback, entry.response)?.label || entry.response || 'No rating';
     const checkin = entry.checkin && demoSignals[entry.checkin] ? ` · Check-in: ${demoSignals[entry.checkin].label}` : '';
-    lines.push(`${new Date(entry.at).toLocaleDateString()} · ${context} · ${variant} · ${response}${checkin}`);
+    const level = entry.soundLevel ? ` · ${entry.soundLevel} volume` : '';
+    lines.push(`${new Date(entry.at).toLocaleDateString()} · ${context} · ${variant} · ${response}${checkin}${level}`);
   });
   const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -211,12 +248,19 @@ function downloadCareSummary() {
 function bindScreen() {
   document.getElementById('patient-view-button')?.addEventListener('click', () => { state.view = 'patient'; state.screen = 'start'; render(); });
   document.getElementById('clinician-view-button')?.addEventListener('click', () => { stopSound(); state.view = 'clinician'; state.screen = 'clinician'; render(); });
-  document.querySelectorAll('[data-signal]').forEach(button => button.addEventListener('click', () => { state.signal = button.dataset.signal; state.suggestion = null; render(); }));
-  document.getElementById('suggest-button')?.addEventListener('click', () => { state.suggestion = buildSuggestion(state.signal); render(); });
-  document.getElementById('suggestion-context')?.addEventListener('change', event => { state.suggestion = buildSuggestion(state.signal, event.target.value); render(); });
-  document.getElementById('suggestion-variant')?.addEventListener('change', event => { state.suggestion.variant = event.target.value; state.suggestion.reason = `You chose ${getChoice(variants, event.target.value).title.toLowerCase()} to try first. Your saved responses stay visible below.`; render(); });
-  document.getElementById('use-suggestion-button')?.addEventListener('click', () => { state.context = state.suggestion.context; state.previewSample = false; state.sessionSignal = state.signal; state.screen = 'trial'; state.firstVariant = state.suggestion.variant; state.index = 0; state.session = []; state.view = 'patient'; render(); });
-  document.getElementById('clear-suggestion-button')?.addEventListener('click', () => { state.suggestion = null; render(); });
+  document.querySelectorAll('[data-signal]').forEach(button => button.addEventListener('click', () => { state.signal = button.dataset.signal; state.suggestion = null; state.momentMatch = null; state.descriptionEntered = false; render(); }));
+  document.getElementById('trial-sound-level')?.addEventListener('change', event => { state.soundLevel = event.target.value; stopSound(); render(); });
+  document.getElementById('suggest-button')?.addEventListener('click', () => {
+    const description = document.getElementById('moment-description')?.value || '';
+    state.descriptionEntered = Boolean(description.trim());
+    state.momentMatch = interpretMoment(description);
+    state.suggestion = buildSuggestion(state.signal, state.momentMatch?.context || undefined, state.momentMatch, state.descriptionEntered);
+    render();
+  });
+  document.getElementById('suggestion-context')?.addEventListener('change', event => { state.suggestion = buildSuggestion(state.signal, event.target.value, state.momentMatch, state.descriptionEntered); render(); });
+  document.getElementById('suggestion-variant')?.addEventListener('change', event => { state.suggestion.variant = event.target.value; state.suggestion.variantEdited = true; render(); });
+  document.getElementById('use-suggestion-button')?.addEventListener('click', () => { state.context = state.suggestion.context; state.previewSample = false; state.sessionSignal = state.suggestion.checkinTag; state.screen = 'trial'; state.firstVariant = state.suggestion.variant; state.index = 0; state.session = []; state.view = 'patient'; render(); });
+  document.getElementById('clear-suggestion-button')?.addEventListener('click', () => { state.suggestion = null; state.momentMatch = null; state.descriptionEntered = false; render(); });
   document.getElementById('download-summary-button')?.addEventListener('click', downloadCareSummary);
   document.querySelectorAll('[data-context]').forEach(button => button.addEventListener('click', () => { state.context = button.dataset.context; render(); }));
   document.getElementById('personal-guide-button')?.addEventListener('click', () => { state.screen = 'guide'; state.previewSample = false; render(); });
@@ -244,7 +288,7 @@ function bindScreen() {
 function recordResponse(response) {
   stopSound();
   const variant = sessionVariants()[state.index];
-  const entry = { id: crypto.randomUUID?.() || String(Date.now()), at: new Date().toISOString(), context: state.context, variant: variant.id, response, checkin: state.sessionSignal, skipped: response === null };
+  const entry = { id: crypto.randomUUID?.() || String(Date.now()), at: new Date().toISOString(), context: state.context, variant: variant.id, response, checkin: state.sessionSignal, soundLevel: state.soundLevel, skipped: response === null };
   state.session.push(entry);
   if (response) { notes.push(entry); saveNotes(); }
   if (state.index === 0) { state.index = 1; state.screen = 'trial'; }
@@ -279,7 +323,7 @@ function startWind(ctx) {
   const lfo = track(ctx.createOscillator()); lfo.frequency.value = .075;
   const depth = track(ctx.createGain()); depth.gain.value = 150;
   lfo.connect(depth); depth.connect(filter.frequency);
-  const gain = track(ctx.createGain()); gain.gain.value = .17;
+  const gain = track(ctx.createGain()); gain.gain.value = .17 * (state.soundLevel === 'soft' ? .42 : state.soundLevel === 'fuller' ? 1 : .68);
   source.connect(filter); filter.connect(gain); gain.connect(ctx.destination); lfo.start();
 }
 function startLeaves(ctx) {
@@ -291,9 +335,10 @@ function startLeaves(ctx) {
     if (!playing) return;
     const now = ctx.currentTime;
     gain.gain.cancelScheduledValues(now);
-    gain.gain.setValueAtTime(.002, now);
-    gain.gain.linearRampToValueAtTime(.055, now + .18 + Math.random()*.18);
-    gain.gain.linearRampToValueAtTime(.002, now + .8 + Math.random()*.5);
+    const scale = state.soundLevel === 'soft' ? .42 : state.soundLevel === 'fuller' ? 1 : .68;
+    gain.gain.setValueAtTime(.002 * scale, now);
+    gain.gain.linearRampToValueAtTime(.055 * scale, now + .18 + Math.random()*.18);
+    gain.gain.linearRampToValueAtTime(.002 * scale, now + .8 + Math.random()*.5);
     soundTimer = setTimeout(rustle, 1000 + Math.random()*1100);
   };
   rustle();
