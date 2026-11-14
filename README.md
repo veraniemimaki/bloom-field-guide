@@ -20,7 +20,7 @@ You only need this link and a modern web browser. No GitHub access, account, ins
 ### What to know before sharing
 
 - Your ratings and check-in category stay in that browser on that computer. They do not follow you to another device. **My field notes** can clear saved ratings and cues.
-- A free-text description stays in the browser unless the user explicitly chooses **Create an image for this moment**. Then it is sent to Google Gemini; BLOOM does not save the prompt or image. Avoid names or medical details. The daily reminder preference is stored locally and notifications work only while the page is open.
+- A free-text description stays in this browser and is used only for the current, explainable suggestion. It is not sent to an AI service or saved. Avoid names or medical details. The daily reminder preference is stored locally and notifications work only while the page is open.
 - **Community** uses a shared database. Posts are held for human review, and approved posts can be seen by anyone. Use fictional text only—never enter names, contact details, or personal health information. This is not crisis support, and no professional is alerted automatically.
 - Sound is generated in the browser. If you don’t hear it, press **Play** and check the computer’s volume.
 - **Need support?** BLOOM is not monitored. It does not infer risk from ratings or alert anyone. In Finland, call 112 for urgent help; MIELI’s English support and booking details are linked in the app. Elsewhere, contact local emergency services or your care team.
@@ -57,7 +57,7 @@ For a manual drag-and-drop deployment, upload the `public/` folder itself, so `i
 
 The Node API in `api/` is hosted separately on Render; Netlify only hosts the frontend. `public/app.js` points to `https://bloom-api-g7bg.onrender.com`. The API allows `https://bloomhuyaah.netlify.app`; redeploy the Render API after updating its source to enable requests from this site. For another frontend domain, add its exact origin to the API's `CORS_ORIGIN` environment variable (comma-separated, without a trailing slash).
 
-Database, moderator, and Gemini credentials belong on the Render API service. They are not needed to publish the static website and must never be added to `public/` or Netlify frontend assets. Community and image generation depend on the API and its configured integrations.
+Database and moderator credentials belong on the Render API service. They are not needed to publish the static website and must never be added to `public/` or Netlify frontend assets. Community features depend on the API and its configured integrations.
 
 If the homepage returns 404, inspect Netlify's deployed files: `index.html`, `app.js`, and `styles.css` should be at the top level, rather than inside a `public` subfolder.
 
@@ -74,8 +74,8 @@ Judges can use the live demo link above without GitHub repo access. The source r
 - Demo flow: self-reported check-in or optional description → local, explainable suggestion informed by saved feedback → two generated sound variations with a shared intensity setting → user rating → personal sensory field guide.
 - Saved ratings can personalize a future suggestion for the same check-in category or moment. A private 14-day panel shows recent ratings for the selected check-in, with small samples labeled as early signals rather than reliable patterns.
 - Care team preview uses fictional data. The current user's local notes are shown separately and downloaded only after they choose.
-- Check-in descriptions are not saved. They are sent to Google Gemini only if the person explicitly chooses image generation; otherwise they stay in the browser.
-- Aiven PostgreSQL powers shared Community posts and the protected human-review queue. Gemini moderation and Cloudinary media delivery are not connected yet; the forest and aurora scenes remain local CSS visuals.
+- Check-in descriptions are not saved or sent to an AI service; they stay in the browser and are used only for the current local suggestion.
+- Aiven PostgreSQL powers shared Community posts and the protected human-review queue. Automated post moderation and Cloudinary media delivery are not connected yet; the forest and aurora scenes remain local CSS visuals.
 - The illustrated forest and procedural sounds are prototype assets.
 
 ## Development notes
@@ -84,20 +84,20 @@ Do not commit API keys, database passwords, certificates, or real health informa
 
 ## Server-side API foundation
 
-The `api/` service is a small Node HTTP API. It reports whether Aiven variables are present without exposing their values, and it provides the community read, submit, review-queue, and decision routes. The preference endpoint remains a mock keyword-based suggestion and does not send text to Gemini. The separate image-generation endpoint sends a moment description only when the person explicitly asks for an image. Secrets belong in Render environment variables, never in browser code or Git.
+The `api/` service is a small Node HTTP API. It reports whether Aiven variables are present without exposing their values, and it provides the community read, submit, review-queue, and decision routes. The preference endpoint uses mock keyword-based suggestions and does not send text to an AI service. Secrets belong in Render environment variables, never in browser code or Git.
 
 ## Community and human review
 
 The Community tab reads approved posts from Aiven PostgreSQL. Submissions are stored as pending and stay hidden until a human reviewer approves them. The reviewer queue and decisions require the `COMMUNITY_MODERATOR_TOKEN`; the frontend keeps the token only in page memory and never saves it.
 
-Gemini moderation is not connected, so all posts are held for human review. The demo has no member accounts, no automatic alert to professionals, and no crisis monitoring. Approved posts are visible to anyone visiting the site. Use fictional content and do not enter names, contact details, treatment advice, or personal health information. Posts expire after 30 days.
+Automated moderation is not connected, so all posts are held for human review. The demo has no member accounts, no automatic alert to professionals, and no crisis monitoring. Approved posts are visible to anyone visiting the site. Use fictional content and do not enter names, contact details, treatment advice, or personal health information. Posts expire after 30 days.
 
 
 ## Aiven PostgreSQL integration groundwork
 
 The API now has an optional Aiven PostgreSQL connection for community posts and the human-review queue. It reads `AIVEN_DATABASE_URL`, verifies TLS with `AIVEN_CA_CERT`, and uses `COMMUNITY_MODERATOR_TOKEN` to protect reviewer endpoints. The API creates the table and indexes from [`api/schema.sql`](api/schema.sql) when the database is configured; records expire after 30 days.
 
-Aiven is connected to the live API and Community frontend. The service initializes the table from `api/schema.sql`; API-submitted posts remain pending until a human approves them. Only approved posts are returned publicly. Gemini moderation is not connected. Do not put credentials in Git or submit real health information.
+Aiven is connected to the live API and Community frontend. The service initializes the table from `api/schema.sql`; API-submitted posts remain pending until a human approves them. Only approved posts are returned publicly. Automated moderation is not connected. Do not put credentials in Git or submit real health information.
 
 Aiven's Node.js connection guidance uses the `pg` package and its PostgreSQL guidance describes the TLS CA requirements: [Aiven Node.js connection guide](https://aiven.io/docs/products/postgresql/howto/connect-node), [Aiven TLS certificates](https://aiven.io/docs/platform/concepts/tls-ssl-certificates).
 
@@ -112,8 +112,3 @@ The optional scene-image control uses Cloudinary's Upload Widget for a user-sele
 The northern-lights scene now offers two additional browser-generated sounds: **Snowfall hush** (soft, slowly wavering filtered noise) and **Distant ice chimes** (sparse, rounded synthesized tones). The forest keeps its wind and leaf pair. Ratings are saved with their scene and only inform later suggestions in that same scene, so northern-lights preferences do not get mixed with forest preferences. No audio service or API key is required.
 
 
-## Optional Gemini image generation
-
-The Patient moment-description box has an optional **Create an image for this moment** action. Only after the person taps it, BLOOM sends the description (up to 160 characters) from the browser to the server-side `POST /api/images/generate` route. The route calls Google's `gemini-3.1-flash-image` model, returns the image directly, and does not store either the prompt or image. The browser holds the image only in page memory. The route is rate-limited to three requests per connection per hour and two concurrent requests.
-
-Set `GEMINI_API_KEY` on the Render `bloom-api` service. The key is never sent to the browser. The API health response reports only whether this variable is configured, not its value. If it is absent, the image action shows a setup message; other BLOOM controls continue to work. Image generation uses Gemini API quota and may incur charges. No image-generation request is made automatically.

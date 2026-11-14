@@ -10,7 +10,6 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@google/genai": "^3.3.0",
     "pg": "^8.16.3"
   }
 }
