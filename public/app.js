@@ -118,12 +118,11 @@ function renderStart() {
     </section>
     ${renderLearningLedger()}
     <div class="start-links"><button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a fictional returning-user example <span aria-hidden="true">↗</span></button>${hasPersonalGuide() ? '<button class="secondary-button sample-button" id="personal-guide-button" type="button">Open my field guide <span aria-hidden="true">→</span></button>' : ''}</div>
-    <details class="manual-context" ${state.context ? 'open' : ''}><summary>Or choose a moment yourself</summary>
-      <p class="manual-context-copy">Pick a setting, add an optional real-world cue, and begin without a suggestion.</p>
+    <section class="manual-context" aria-labelledby="manual-context-title"><div class="manual-context-heading"><div><p class="eyebrow">ANOTHER WAY IN</p><h2 id="manual-context-title">Choose a moment yourself</h2></div><p>Pick a setting and begin without a suggestion.</p></div>
 <div class="choice-grid">${contexts.map(c => `<button class="choice-card ${state.context === c.id ? 'selected' : ''}" data-context="${c.id}" type="button"><span class="choice-icon">${c.icon}</span><span><span class="choice-title">${c.title}</span><span class="choice-sub">${c.sub}</span></span></button>`).join('')}</div>
     ${state.context ? `<label class="support-option-field" for="support-option"><span class="support-option-title">Your own real-world cue <span>(optional)</span></span><textarea id="support-option" maxlength="160" placeholder="${state.context === 'wind-down' ? 'For example: settle somewhere comfortable' : state.context === 'reset' ? 'For example: notice your feet on the floor' : 'For example: look outside from where you are'}">${escapeHtml(supportOption)}</textarea><span class="privacy-note">Saved only on this device. You can change or remove it anytime.</span></label>` : ''}
     <div class="actions"><button class="primary-button" id="begin-button" type="button" ${state.context ? '' : 'disabled'}>Begin the experience <span aria-hidden="true">→</span></button><button class="text-button" id="skip-button" type="button">Not now</button></div>
-    </details>
+</section>
 
 }
 function renderLearningLedger() {
@@ -617,8 +616,30 @@ function setScene(scene) {
 }
 document.querySelectorAll('[data-scene]').forEach(button => button.addEventListener('click', () => setScene(button.dataset.scene)));
 document.getElementById('cloudinary-upload-button')?.addEventListener('click', openCloudinaryUpload);
-function openCloudinaryUpload() {
-  if (!cloudinaryConfig.cloudName || !cloudinaryConfig.unsignedUploadPreset || !window.cloudinary?.createUploadWidget) return;
+let cloudinaryScriptPromise = null;
+function loadCloudinaryWidget() {
+  if (window.cloudinary?.createUploadWidget) return Promise.resolve();
+  if (!cloudinaryScriptPromise) {
+    cloudinaryScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://upload-widget.cloudinary.com/latest/global/all.js';
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Cloudinary upload widget failed to load.'));
+      document.head.appendChild(script);
+    });
+  }
+  return cloudinaryScriptPromise;
+}
+async function openCloudinaryUpload() {
+  if (!cloudinaryConfig.cloudName || !cloudinaryConfig.unsignedUploadPreset) return;
+  try {
+    await loadCloudinaryWidget();
+  } catch {
+    alert('The optional image uploader could not load. The forest and northern-lights scenes still work.');
+    return;
+  }
+  if (!window.cloudinary?.createUploadWidget) return;
   cloudinaryWidget ||= window.cloudinary.createUploadWidget({
     cloudName: cloudinaryConfig.cloudName,
     uploadPreset: cloudinaryConfig.unsignedUploadPreset,
