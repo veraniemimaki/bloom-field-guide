@@ -110,8 +110,12 @@ async function initializeDatabase() {
     await pool.query(schema);
     await pool.query("DELETE FROM community_posts WHERE expires_at < NOW()");
     databaseReady = true;
-  } catch {
-    console.error("Aiven Postgres initialization failed; community routes remain disabled.");
+  } catch (error) {
+    // Log only the driver error class and code; never emit connection details or certificate contents.
+    console.error("Aiven Postgres initialization failed; community routes remain disabled.", {
+      name: error?.name || "Error",
+      code: error?.code || error?.cause?.code || "unknown"
+    });
     await pool.end().catch(() => {});
     pool = null;
   }
