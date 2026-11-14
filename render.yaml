@@ -5,3 +5,16 @@ services:
     branch: main
     buildCommand: ""
     staticPublishPath: .
+  - type: web
+    name: bloom-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: api
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: CORS_ORIGIN
+        value: "https://bloom-field-guide.onrender.com,http://localhost:8000"

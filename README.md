@@ -53,3 +53,12 @@ Judges can use the live demo link above without GitHub repo access. The source r
 ## Development notes
 
 Do not commit API keys, database passwords, certificates, or real health information. When integrations are added, secrets belong in server-side environment variables. Keep demo data fictional unless you have an approved research process and participant consent.
+
+## Server-side API foundation
+
+The `api/` service is a small Node HTTP API with:
+- `GET /api/health` for Render health checks.
+- `POST /api/preferences/interpret` for a mock, keyword-based context suggestion.
+
+The mock endpoint stores no submitted text and does not use an AI model. The current browser app does not call it yet. Do not send real or identifying health information in this prototype. Provider keys belong in Render environment variables, never in browser code or Git.
+
