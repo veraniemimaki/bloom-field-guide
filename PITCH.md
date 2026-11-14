@@ -4,23 +4,25 @@
 
 TMS happens in a clinic. The ordinary moments afterward happen at home.
 
-BLOOM is a personal sensory field guide for that part of the journey. The idea is simple: give someone an optional, two-minute way to explore which sounds they prefer—and let their own feedback shape what they try next.
+BLOOM is a personal sensory field guide for that part of the journey. It gives someone an optional way to explore which sounds they prefer—and lets their own feedback shape what they try next.
 
 [Show the opening screen.]
 
-You can start right away. Choose Forest or Northern Lights; each scene has its own pair. Or, if you want, add a self-reported check-in and a few words about the moment. BLOOM offers a starting sound and tells you why. You stay in control: change it, skip it, or stop.
+You can start right away. Choose Forest or Northern Lights; each has its own pair of browser-generated sounds. Or add a self-reported check-in and a few words about the moment. BLOOM offers a starting point and explains why. You can change it, skip it, or stop.
 
-[Play the two sounds at the same level setting.]
+[Briefly play each sound at the same level setting.]
 
-Here’s the feedback loop. In this example, someone tried soft wind and rustling leaves, marked wind “felt better,” and leaves “felt worse.” The next time they choose the same moment and scene, BLOOM suggests wind first and explains that it is following their saved preference.
+Here’s the loop. In this clearly labeled fictional example, soft wind felt worse and rustling leaves felt better. For the same Forest scene and Wind down moment, BLOOM now suggests leaves first—and shows why. The sample is not saved to anyone’s notes.
 
-BLOOM is learning a person’s sound preferences—not measuring their mental health. The notes stay in the browser on their device, and the suggestions use transparent rules.
+[Open “See how feedback changes the next suggestion” and show the ratings beside the changed suggestion.]
+
+That’s the point: BLOOM learns a person’s sound preferences, not their mental health. The notes stay in their browser, and the suggestions use transparent rules.
 
 [Show Community briefly.]
 
-We also built an optional peer space. Aiven PostgreSQL stores posts until a human reviewer approves them. Approved posts are visible to visitors and expire after 30 days. Codex helped us build and refine the working experience and its community backend in 48 hours.
+We also built an optional peer space using Aiven PostgreSQL. Posts stay hidden until a human reviewer approves them; approved posts are visible to visitors and expire after 30 days. Codex helped us build and refine the working experience and backend in 48 hours.
 
-We haven’t formally evaluated BLOOM with people after TMS or clinicians. Our next step is to co-design with both groups and test whether the experience is clear, useful, accessible, and worth returning to.
+We haven’t formally evaluated BLOOM with people after TMS or clinicians. Our next step is to co-design with both groups, then test whether the experience is clear, useful, accessible, and worth returning to.
 
 In 48 hours, we built a working loop: choose, listen, rate, and personalize the next suggestion.
 
@@ -28,4 +30,6 @@ In 48 hours, we built a working loop: choose, listen, rate, and personalize the 
 
 ## Demo preparation
 
-For a clear adaptation demo, use a dedicated browser profile with a Forest / Wind down example: rate **Soft wind** “felt better” and **Rustling leaves** “felt worse.” Then open **Personalize this moment**, keep the same moment and scene, and show the explanation for the Soft wind suggestion. Use fictional demo data only.
+The opening-screen button **See how feedback changes the next suggestion** opens the fictional adaptation example directly. It shows Forest / Wind down, prior ratings of **Soft wind — felt worse** and **Rustling leaves — felt better**, then the app-generated suggestion **Rustling leaves first** with its explanation. It does not save sample notes. Use this as the central proof point; keep audio excerpts brief and Community to a quick mention if time is tight.
+
+The same level setting applies to both sounds; it does not claim matched perceived loudness.

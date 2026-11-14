@@ -13,7 +13,7 @@ You only need this link and a modern web browser. No GitHub access, account, ins
 1. In **Patient**, choose **Start the sound comparison** to begin immediately with the selected scene’s sound pair. Or open **Personalize this moment (optional)** first.
 2. To tailor a suggestion, choose a self-reported check-in or describe the moment, select **Shape a sensory experiment**, review the reason, and choose **Try this suggestion**.
 3. Press **Play**, then rate each sound *felt better*, *no difference*, or *felt worse*. You can skip or stop at any time.
-4. BLOOM saves rated experiences in this browser. Repeat a check-in later to see how your own feedback informs a future suggestion.
+4. To see the loop immediately, choose **See how feedback changes the next suggestion** on the opening screen. This clearly labeled fictional example shows wind rated “felt worse,” leaves rated “felt better,” then leaves suggested first for the same Forest / Wind down moment. The example is not saved to your notes.
 5. Optionally choose a reminder time and frequency. Browser reminders work only while BLOOM is open and notifications are allowed.
 6. Choose **I’d like a check-in** to add a private note for yourself. Downloading your summary creates a file on your device; BLOOM does not send it to your care team.
 
@@ -32,7 +32,7 @@ You don’t need to add someone as a GitHub collaborator just to let them try th
 
 **BLOOM is a personal sensory field guide for life at home after TMS.**
 
-This 48-hour prototype explores a modest idea: a small, optional sound ritual could help someone notice what they personally prefer in everyday moments after treatment. Start immediately or choose a self-reported check-in and describe the moment. Forest and Northern Lights each have their own pair of browser-generated sounds. Compare them using the same level setting, rate each, and see your own feedback shape a future suggestion—with a plain explanation of why it changed. Personal notes stay in the browser on the person’s device.
+This 48-hour prototype explores a modest idea: a small, optional sound ritual could help someone notice what they personally prefer in everyday moments after treatment. Start immediately or choose a self-reported check-in and describe the moment. Forest and Northern Lights each have their own pair of browser-generated sounds. Compare them using the same level setting, rate each, and see your own feedback shape a future suggestion—with a plain explanation of why it changed. Its central mechanism is context-specific preference learning: for the same moment and scene, a person’s own ratings can change which sound is suggested first. The opening screen includes a fictional example that makes this change visible without mixing sample ratings into anyone’s notes. Personal notes stay in the browser on the person’s device.
 
 The optional Community space uses Aiven PostgreSQL to hold posts for human review; only approved posts appear, and they expire after 30 days. Codex helped us build and refine the working demo.
 
