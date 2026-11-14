@@ -265,44 +265,73 @@ function sessionVariants() {
   const first = options.find(v => v.id === state.firstVariant) || options[0];
   return [first, ...options.filter(v => v.id !== first.id)];
 }
-function recentProfileHistory(variantId, sceneId) {
-  const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
-  return notes
-    .filter(note => note.variant === variantId && (note.scene || 'forest') === sceneId && note.response && Date.parse(note.at) >= cutoff)
-    .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
-    .slice(0, 3);
-}
-function isRepeatedlyDisliked(variantId, sceneId) {
-  const history = recentProfileHistory(variantId, sceneId);
-  return history[0]?.response === 'worse' && history.filter(note => note.response === 'worse').length >= 2;
+let adaptiveSuggestionCache = { key: '', checkedAt: 0, value: null };
+function profileHistoryIndex(now = Date.now()) {
+  const cutoff = now - 14 * 24 * 60 * 60 * 1000;
+  const recent = notes
+    .filter(note => note.response && Date.parse(note.at) >= cutoff)
+    .sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+  const histories = new Map();
+  for (const variant of variants) {
+    const scene = ['snow-hush', 'ice-chimes'].includes(variant.id) ? 'aurora' : 'forest';
+    histories.set(scene + ':' + variant.id, []);
+  }
+  for (const note of recent) {
+    const scene = note.scene || 'forest';
+    const history = histories.get(scene + ':' + note.variant);
+    if (history && history.length < 3) history.push(note);
+  }
+  return histories;
 }
 function getAdaptiveSuggestion() {
+  const now = Date.now();
+  const latestNote = notes[notes.length - 1];
+  const key = notes.length + ':' + (latestNote?.id || latestNote?.at || '');
+  if (adaptiveSuggestionCache.key === key && now - adaptiveSuggestionCache.checkedAt < 30000) return adaptiveSuggestionCache.value;
+  const histories = profileHistoryIndex(now);
   const triggers = variants.map(variant => {
     const scene = ['snow-hush', 'ice-chimes'].includes(variant.id) ? 'aurora' : 'forest';
-    const history = recentProfileHistory(variant.id, scene);
+    const history = histories.get(scene + ':' + variant.id) || [];
     const dislikes = history.filter(note => note.response === 'worse').length;
     return history[0]?.response === 'worse' && dislikes >= 2
       ? { variant, scene, history, dislikes, latestAt: Date.parse(history[0].at) }
       : null;
   }).filter(Boolean).sort((a, b) => b.latestAt - a.latestAt);
   const trigger = triggers[0];
-  if (!trigger) return null;
-  let targetScene = trigger.scene === 'forest' ? 'aurora' : 'aurora';
-  let candidates = variants.filter(variant => variant.id !== trigger.variant.id &&
-    (targetScene === 'aurora' ? ['snow-hush', 'ice-chimes'].includes(variant.id) : ['wind', 'leaves'].includes(variant.id)));
-  const freshCandidates = candidates.filter(variant => !isRepeatedlyDisliked(variant.id, targetScene));
+  if (!trigger) {
+    adaptiveSuggestionCache = { key, checkedAt: now, value: null };
+    return null;
+  }
+  let targetScene = 'aurora';
+  let candidates = variants.filter(variant =>
+    targetScene === 'aurora' ? ['snow-hush', 'ice-chimes'].includes(variant.id) : ['wind', 'leaves'].includes(variant.id));
+  const freshCandidates = candidates.filter(variant => {
+    const history = histories.get(targetScene + ':' + variant.id) || [];
+    return !(history[0]?.response === 'worse' && history.filter(note => note.response === 'worse').length >= 2);
+  });
   if (!freshCandidates.length) {
-    targetScene = targetScene === 'aurora' ? 'forest' : 'aurora';
-    candidates = variants.filter(variant => (targetScene === 'aurora' ? ['snow-hush', 'ice-chimes'].includes(variant.id) : ['wind', 'leaves'].includes(variant.id)) && variant.id !== trigger.variant.id);
+    targetScene = 'forest';
+    candidates = variants.filter(variant => ['wind', 'leaves'].includes(variant.id));
   } else candidates = freshCandidates;
   const preferenceScore = variant => {
-    const history = recentProfileHistory(variant.id, targetScene);
+    const history = histories.get(targetScene + ':' + variant.id) || [];
     return history.filter(note => note.response === 'better').length * 2 - history.filter(note => note.response === 'worse').length * 3;
   };
   candidates.sort((a, b) => preferenceScore(b) - preferenceScore(a));
   const next = candidates[0] || availableVariants()[0];
   const latest = trigger.history[0];
-  return { from: trigger.variant, fromScene: trigger.scene, count: trigger.dislikes, total: trigger.history.length, context: latest.context || 'wind-down', checkin: latest.checkin || null, scene: targetScene, variant: next.id };
+  const value = {
+    from: trigger.variant,
+    fromScene: trigger.scene,
+    count: trigger.dislikes,
+    total: trigger.history.length,
+    context: latest.context || 'wind-down',
+    checkin: latest.checkin || null,
+    scene: targetScene,
+    variant: next.id
+  };
+  adaptiveSuggestionCache = { key, checkedAt: now, value };
+  return value;
 }
 function hasPersonalGuide() { return notes.length > 0 || Object.values(supportOptions).some(value => String(value || '').trim()); }
 function interpretMoment(text) {
@@ -727,6 +756,10 @@ async function toggleSound() {
   render();
 }
 function track(node) { soundNodes.push(node); return node; }
+function untrack(node) {
+  const index = soundNodes.indexOf(node);
+  if (index >= 0) soundNodes.splice(index, 1);
+}
 function makeNoise(ctx) {
   const size = ctx.sampleRate * 2;
   const buffer = ctx.createBuffer(1, size, ctx.sampleRate);
@@ -785,6 +818,10 @@ function startIceChimes(ctx) {
       envelope.gain.exponentialRampToValueAtTime((index ? .008 : .022) * scale, now + .035);
       envelope.gain.exponentialRampToValueAtTime(.0001, now + 1.8 + Math.random() * .9);
       oscillator.connect(envelope); envelope.connect(ctx.destination);
+      oscillator.onended = () => {
+        untrack(oscillator); untrack(envelope);
+        try { oscillator.disconnect(); envelope.disconnect(); } catch {}
+      };
       oscillator.start(now); oscillator.stop(now + 2.9);
     });
     soundTimer = setTimeout(chime, 2100 + Math.random() * 1600);
