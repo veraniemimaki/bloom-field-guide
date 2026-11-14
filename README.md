@@ -10,19 +10,20 @@ You only need this link and a modern web browser. No GitHub access, account, ins
 
 ### Two-minute walkthrough
 
-1. In **Patient**, choose a check-in, then select **Shape a sensory experiment**.
-2. Review the suggested moment and sound. Choose **Try this suggestion**.
-3. Press **Play** for each sound and rate how it felt. You can skip either one.
-4. After both sounds, see what your feedback says. Try again to see how saved ratings can inform a later suggestion.
-5. Choose **Care team preview** to see a fictional example. It does not show or send anyone's real health data.
-6. Switch between **Forest** and **Northern lights** if you like; those change the backdrop, not the sound.
+1. In **Patient**, choose a check-in or describe the moment, then select **Shape a sensory experiment**.
+2. Review the starting suggestion and why it was chosen; edit it if you like, then choose **Try this suggestion**.
+3. Press **Play**, then rate each sound *felt better*, *no difference*, or *felt worse*. You can skip or stop at any time.
+4. BLOOM saves rated experiences in this browser. Return to **Patient** and repeat a check-in to see how your own feedback informs a later suggestion.
+5. Optionally choose a reminder time and frequency. Browser reminders work only while BLOOM is open and notifications are allowed.
+6. Choose **I’d like a check-in** to add a private note for yourself. Downloading your summary creates a file on your device; BLOOM does not send it to your care team.
 
 ### What to know before sharing
 
 - Your ratings and check-in category stay in that browser on that computer. They do not follow you to another device. **My field notes** can clear saved ratings and cues.
-- A free-text description is read in the browser and discarded; BLOOM does not send it to an AI service.
+- A free-text description is read in the browser and discarded; BLOOM does not send it to an AI service. The daily reminder preference is stored locally and notifications work only while the page is open.
 - **Community** uses a shared database. Posts are held for human review, and approved posts can be seen by anyone. Use fictional text only—never enter names, contact details, or personal health information. This is not crisis support, and no professional is alerted automatically.
 - Sound is generated in the browser. If you don’t hear it, press **Play** and check the computer’s volume.
+- **Need support?** BLOOM is not monitored. It does not infer risk from ratings or alert anyone. In Finland, call 112 for urgent help; MIELI’s English support and booking details are linked in the app. Elsewhere, contact local emergency services or your care team.
 - For the demo, use fictional examples. BLOOM is a prototype, not a medical device or treatment; it does not diagnose, detect relapse, or replace clinical care.
 
 You don’t need to add someone as a GitHub collaborator just to let them try the live demo. Add repo access only if they need to view or change the private source code.
