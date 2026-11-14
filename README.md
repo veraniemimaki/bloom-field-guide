@@ -17,7 +17,7 @@
 
 Switch between **Forest** and **Northern lights** in the banner; this changes the visual backdrop while keeping the sound experiment the same.
 
-Free-text descriptions are read in the browser only, then discarded. Optional phone movement is sampled only after a user taps the button; raw readings stay in memory for six seconds, are discarded, and are never transmitted. If the user rates that session, only the broad still/moving category is saved with the rating in local browser storage. Learning compares measured and simulated samples separately. The movement cue describes device movement only, not mood or health. BLOOM saves the selected check-in category, sound feedback, and optional real-world cues in local storage on that device. The My field notes dialog can clear those saved notes and cues. The two soundscapes are synthesized in the browser. Allow audio playback when your browser asks.
+Free-text descriptions are read in the browser only, then discarded. BLOOM saves the selected check-in category, sound feedback, and optional real-world cues in local storage on that device. The My field notes dialog can clear those saved notes and cues. The two soundscapes are synthesized in the browser. Allow audio playback when your browser asks.
 
 ## What BLOOM does
 
