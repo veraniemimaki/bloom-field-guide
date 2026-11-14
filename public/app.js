@@ -744,13 +744,17 @@ function setScene(scene) {
   backdrop.hidden = !isCustom;
   if (isCustom) backdrop.src = customSceneUrl;
   document.getElementById('scene-title').textContent = scene === 'forest' ? 'A forest, just after rain' : scene === 'aurora' ? 'Northern lights, moving quietly' : 'A scene you chose';
-  document.getElementById('scene-eyebrow').textContent = scene === 'forest' ? 'A MOMENT TO YOURSELF' : scene === 'aurora' ? 'A DIFFERENT VIEW, SAME SOUND EXPERIMENT' : 'YOUR PERSONAL VISUAL BACKDROP';
+  document.getElementById('scene-eyebrow').textContent = scene === 'forest' ? 'A MOMENT TO YOURSELF' : scene === 'aurora' ? 'WINTER SOUNDS BENEATH THE AURORA' : 'YOUR PERSONAL VISUAL BACKDROP';
   banner.setAttribute('aria-label', scene === 'forest' ? 'Forest visual backdrop' : scene === 'aurora' ? 'Northern lights visual backdrop' : 'User-selected Cloudinary visual backdrop');
   document.querySelectorAll('[data-scene]').forEach(button => {
     const isSelected = button.dataset.scene === scene;
     button.classList.toggle('active', isSelected);
     button.setAttribute('aria-pressed', String(isSelected));
   });
+  if (state.suggestion) {
+    state.suggestion = buildSuggestion(state.signal, state.suggestion.context, state.momentMatch, state.descriptionEntered);
+    if (state.screen === 'start') render();
+  }
 }
 document.querySelectorAll('[data-scene]').forEach(button => button.addEventListener('click', () => setScene(button.dataset.scene)));
 document.getElementById('cloudinary-upload-button')?.addEventListener('click', openCloudinaryUpload);
