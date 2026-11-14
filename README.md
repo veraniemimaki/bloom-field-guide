@@ -15,6 +15,8 @@
 5. Open **My field guide** for personal notes or **Care summary** to review and download a summary you decide whether to share.
 6. Choose **Preview a fictional returning-user example** to see sample history kept separate from personal notes.
 
+Switch between **Forest** and **Northern lights** in the banner; this changes the visual backdrop while keeping the sound experiment the same.
+
 Free-text descriptions are read in the browser only, then discarded. They are not saved or sent. BLOOM saves the selected check-in category and sound feedback in local storage on that device. The two soundscapes are synthesized in the browser. Allow audio playback when your browser asks.
 
 ## What BLOOM does
