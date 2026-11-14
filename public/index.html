@@ -31,7 +31,7 @@
 
     <footer class="footer">
       <span>BLOOM is an optional companion alongside clinical care.</span>
-      <button class="text-button" id="about-button" type="button">About this demo</button>
+      <button class="text-button" id="support-button" type="button">Need support?</button><button class="text-button" id="about-button" type="button">About this demo</button>
     </footer>
   </main>
 
@@ -42,6 +42,15 @@
     <p class="privacy-note">Field notes and optional real-world cues stay in this browser on this device. Community posts are stored separately in the shared database.</p>
     <button class="text-button danger" id="clear-button" type="button">Clear my notes and saved cues</button>
   </dialog>
+  <dialog id="support-dialog" class="dialog support-dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form>
+    <p class="eyebrow">SUPPORT OPTIONS</p><h2>Choose the support that feels right</h2>
+    <p>If a sound felt uncomfortable, you can stop or skip it. BLOOM does not monitor your answers or alert your care team.</p>
+    <p>You can contact your care team. If you are in Finland and need urgent help or are in immediate danger, call <a href="tel:112">112</a>.</p>
+    <p>For difficult situations, MIELI offers scheduled English-language phone or video counselling. Check its current support and booking information at <a href="https://mieli.fi/en/support-and-help/crisis-counselling/" target="_blank" rel="noopener noreferrer">mieli.fi</a>.</p>
+    <p class="privacy-note">If you are elsewhere, contact your local emergency service or care team. This page is not an emergency service.</p>
+    <form method="dialog"><button class="primary-button">Close</button></form>
+  </dialog>
   <dialog id="about-dialog" class="dialog">
     <form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form>
     <p class="eyebrow">ABOUT BLOOM</p><h2>A field guide, not a diagnosis</h2>
@@ -51,6 +60,6 @@
   </dialog>
   <script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
   <script src="cloudinary-config.js"></script>
-  <script src="app.js?v=checkin-learning-v1"></script>
+  <script src="app.js?v=personal-loop-v1"></script>
 </body>
 </html>
