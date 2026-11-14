@@ -27,7 +27,7 @@ const sampleNotes = [
 
 let notes = loadNotes();
 let supportOptions = loadSupportOptions();
-let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, followUps: {}, communityTab: 'room', communityMessage: '', communityConsent: false, communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '' };
+let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, followUps: {}, followUpDraft: 'Hi, I saw that you asked for a check-in. Would you like to share how things have been going, or would you prefer to talk at your next appointment?', followUpNotice: '', communityTab: 'room', communityMessage: '', communityConsent: false, communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '' };
 const demoSignals = {
   restless: { label: 'Restless night', detail: 'A self-reported demo check-in: sleep felt unsettled.', context: 'wind-down', variant: 'wind', reason: 'A quieter wind-down moment may be worth trying after a restless night.' },
   overloaded: { label: 'Too much going on', detail: 'A self-reported demo check-in: the moment feels busy or overstimulating.', context: 'reset', variant: 'leaves', reason: 'A brief pause with a lighter leaf sound may be worth trying when things feel busy.' },
@@ -285,7 +285,7 @@ async function decideCommunityPost(id, decision) {
   }
 }
 
-function renderClinician() {
+function renderPersonalSummary() {
   const entries = [...notes].reverse();
   const summaryRows = entries.length
     ? entries.map(entry => {
@@ -303,6 +303,45 @@ function renderClinician() {
     <div class="summary-toolbar"><span>${entries.length} ${entries.length === 1 ? 'rated experience' : 'rated experiences'}</span><button class="primary-button" id="download-summary-button" type="button" ${entries.length ? '' : 'disabled'}>Download summary to share</button></div>
     <div class="summary-list">${summaryRows}</div>
     <p class="privacy-note">Downloading creates a text file on your device. BLOOM does not transmit it; you decide whether and with whom to share it.</p>`;
+}
+function renderClinician() {
+  const timeline = [
+    { when: 'Today · 2 days ago', label: 'Patient-requested check-in', detail: '“A brief follow-up would help.”', kind: 'requested' },
+    { when: 'This week', label: 'Optional sensory practice', detail: 'Soft wind · response: “No difference”', kind: '' },
+    { when: 'This week', label: 'Self-reported check-in', detail: '“Low energy” · shared by the patient', kind: '' },
+    { when: 'Last week', label: 'Optional sensory practice', detail: 'Rustling leaves · response: “Felt better”', kind: '' },
+    { when: '3 weeks ago', label: 'TMS course completed', detail: 'Follow-up period begins in this fictional example.', kind: '' }
+  ];
+  const timelineRows = timeline.map(item => `<article class="care-timeline-item ${item.kind}"><time>${escapeHtml(item.when)}</time><div><strong>${escapeHtml(item.label)}</strong><p>${escapeHtml(item.detail)}</p></div></article>`).join('');
+  return `<p class="step-label">Care team preview · fictional case</p><h1>A follow-up view built around what the person shares.</h1>
+    <p class="lead">This sample shows how patient-selected check-ins and practice feedback could support a conversation after TMS.</p>
+    <div class="care-demo-banner"><span class="demo-tag">FICTIONAL DEMO DATA</span><span>No connected patient account · no wearable data · no relapse or risk score</span></div>
+    <section class="care-person-card"><div><p class="eyebrow">SAMPLE MEMBER · 204</p><h2>Three weeks after TMS</h2><p>Example only. In a real service, a person would choose what to share with their care team.</p></div><span class="care-followup-pill">Patient asked for a check-in</span></section>
+    <div class="care-metrics">
+      <article class="care-metric"><span>Shared check-ins</span><strong>3</strong><small>in the last 7 days · self-reported</small></article>
+      <article class="care-metric"><span>Optional practices</span><strong>2</strong><small>in the last 7 days · not treatment adherence</small></article>
+      <article class="care-metric"><span>Helpful ratings</span><strong>1 of 2</strong><small>the person's own response</small></article>
+    </div>
+    <section class="care-panel"><div class="care-panel-heading"><div><p class="eyebrow">SHARED TIMELINE</p><h2>What the person chose to share</h2></div><span class="care-data-tag">SAMPLE</span></div><div class="care-timeline">${timelineRows}</div>
+      <p class="privacy-note">A check-in or rating is a prompt for a human conversation, not proof of stability, deterioration, or treatment effect. No phone or wearable signal is read.</p>
+    </section>
+    <section class="care-panel followup-composer"><p class="eyebrow">DRAFT A HUMAN CHECK-IN</p><h2>Respond to the request</h2><p>This only prepares text for the demo. It does not send a message or contact anyone.</p>
+      <label for="followup-draft">Message draft</label><textarea id="followup-draft" maxlength="500">${escapeHtml(state.followUpDraft)}</textarea>
+      <div class="followup-actions"><button class="secondary-button" id="copy-followup-button" type="button">Copy draft</button><span class="privacy-note" id="followup-copy-status" role="status">${escapeHtml(state.followUpNotice)}</span></div>
+    </section>
+    <p class="privacy-note">The live app does not connect patient accounts to clinicians. This preview uses fictional data to demonstrate a possible consent-based workflow.</p>
+    <details class="personal-summary-details"><summary>Your private, on-device notes and shareable summary</summary>${renderPersonalSummary()}</details>`;
+}
+async function copyFollowUpDraft() {
+  const field = document.getElementById('followup-draft');
+  state.followUpDraft = String(field?.value || '').slice(0, 500);
+  try {
+    await navigator.clipboard.writeText(state.followUpDraft);
+    state.followUpNotice = 'Copied. Choose whether to share it outside BLOOM.';
+  } catch {
+    state.followUpNotice = 'Clipboard unavailable here. Select the draft text and copy it.';
+  }
+  render();
 }
 function renderGuide() {
   const cards = contexts.map(context => {
@@ -410,6 +449,8 @@ function bindScreen() {
   }));
   document.getElementById('patient-view-button')?.addEventListener('click', () => { state.view = 'patient'; state.screen = 'start'; render(); });
   document.getElementById('clinician-view-button')?.addEventListener('click', () => { stopSound(); state.view = 'clinician'; state.screen = 'clinician'; render(); });
+  document.getElementById('followup-draft')?.addEventListener('input', event => { state.followUpDraft = event.target.value.slice(0, 500); });
+  document.getElementById('copy-followup-button')?.addEventListener('click', copyFollowUpDraft);
   document.querySelectorAll('[data-signal]').forEach(button => button.addEventListener('click', () => { state.signal = button.dataset.signal; state.suggestion = null; state.momentMatch = null; state.descriptionEntered = false; render(); }));
   document.getElementById('trial-sound-level')?.addEventListener('change', event => { state.soundLevel = event.target.value; stopSound(); render(); });
   document.getElementById('suggest-button')?.addEventListener('click', () => {
@@ -565,7 +606,7 @@ function openCloudinaryUpload() {
 
 document.getElementById('history-button').addEventListener('click', () => { renderHistory(); document.getElementById('history-dialog').showModal(); });
 document.getElementById('about-button').addEventListener('click', () => document.getElementById('about-dialog').showModal());
-document.getElementById('clear-button').addEventListener('click', () => { notes = []; saveNotes(); renderHistory(); });
+document.getElementById('clear-button').addEventListener('click', () => { notes = []; supportOptions = {}; saveNotes(); saveSupportOptions(); renderHistory(); });
 function renderHistory() {
   const host = document.getElementById('history-content');
   if (!notes.length) { host.innerHTML = '<div class="empty-note">No saved field notes yet. Try a short experience to start one.</div>'; return; }
