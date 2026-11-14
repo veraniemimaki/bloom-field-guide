@@ -24,7 +24,7 @@ const sampleNotes = [
 
 let notes = loadNotes();
 let supportOptions = loadSupportOptions();
-let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, view: 'patient', signal: 'restless', suggestion: null, followUps: {} };
+let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, view: 'patient', signal: 'restless', suggestion: null, followUps: {} };
 const demoSignals = {
   restless: { label: 'Restless night', detail: 'A self-reported demo check-in: sleep felt unsettled.', context: 'wind-down', variant: 'wind', reason: 'A quieter wind-down moment may be worth trying after a restless night.' },
   overloaded: { label: 'Too much going on', detail: 'A self-reported demo check-in: the moment feels busy or overstimulating.', context: 'reset', variant: 'leaves', reason: 'A brief pause with a lighter leaf sound may be worth trying when things feel busy.' },
@@ -67,8 +67,8 @@ function renderStart() {
     <h1>What would feel useful right now?</h1>
     <p class="lead">Choose a moment. We’ll explore two versions of the same forest scene, changing only the sound.</p>
     <section class="signal-panel" aria-labelledby="signal-heading">
-      <div class="signal-heading"><div><p class="eyebrow">OPTIONAL · DEMO CHECK-IN</p><h2 id="signal-heading">Let BLOOM respond to this moment</h2></div><span class="demo-tag">SIMULATED</span></div>
-      <p class="signal-copy"><strong>${escapeHtml(demoSignals[state.signal].detail)}</strong><br>Choose a self-reported example to see how a check-in could shape a suggestion. No phone or wearable data is connected.</p>
+      <div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">DEMO EXAMPLES</span></div>
+      <p class="signal-copy"><strong>${escapeHtml(demoSignals[state.signal].detail)}</strong><br>Choose the example that fits, or skip the check-in. This prototype uses your choice and saved field notes; it does not read phone or wearable sensors.</p>
       <div class="signal-options">${Object.entries(demoSignals).map(([id, item]) => `<button class="signal-option ${state.signal === id ? 'selected' : ''}" data-signal="${id}" type="button" aria-pressed="${state.signal === id}">${item.label}</button>`).join('')}</div>
       <button class="secondary-button" id="suggest-button" type="button">Suggest a starting point</button>
       ${state.suggestion ? `<div class="suggestion-card"><p class="eyebrow">A STARTING POINT TO CONSIDER</p><p class="suggestion-edit-label">Moment</p><select id="suggestion-context" class="suggestion-select">${contexts.map(item => `<option value="${item.id}" ${item.id === state.suggestion.context ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p class="suggestion-edit-label">Sound to try first</p><select id="suggestion-variant" class="suggestion-select">${variants.map(item => `<option value="${item.id}" ${item.id === state.suggestion.variant ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p>${escapeHtml(state.suggestion.reason)}</p><div class="suggestion-actions"><button class="primary-button" id="use-suggestion-button" type="button">Try this suggestion</button><button class="text-button" id="clear-suggestion-button" type="button">Clear suggestion</button></div></div>` : ''}
@@ -76,7 +76,7 @@ function renderStart() {
     </section>
     <div class="start-links"><button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a fictional returning-user example <span aria-hidden="true">↗</span></button>${hasPersonalGuide() ? '<button class="secondary-button sample-button" id="personal-guide-button" type="button">Open my field guide <span aria-hidden="true">→</span></button>' : ''}</div>
     <div class="choice-grid">${contexts.map(c => `<button class="choice-card ${state.context === c.id ? 'selected' : ''}" data-context="${c.id}" type="button"><span class="choice-icon">${c.icon}</span><span><span class="choice-title">${c.title}</span><span class="choice-sub">${c.sub}</span></span></button>`).join('')}</div>
-    ${state.context ? `<label class="support-option-field" for="support-option"><span class="support-option-title">A small support option for this moment <span>(optional)</span></span><textarea id="support-option" maxlength="160" placeholder="For example: sit by an open window">${escapeHtml(supportOption)}</textarea><span class="privacy-note">Saved only on this device. You can change or remove it anytime.</span></label>` : ''}
+    ${state.context ? `<label class="support-option-field" for="support-option"><span class="support-option-title">Your own real-world cue <span>(optional)</span></span><textarea id="support-option" maxlength="160" placeholder="${state.context === 'wind-down' ? 'For example: settle somewhere comfortable' : state.context === 'reset' ? 'For example: notice your feet on the floor' : 'For example: look outside from where you are'}">${escapeHtml(supportOption)}</textarea><span class="privacy-note">Saved only on this device. You can change or remove it anytime.</span></label>` : ''}
     <div class="actions"><button class="primary-button" id="begin-button" type="button" ${state.context ? '' : 'disabled'}>Begin the experience <span aria-hidden="true">→</span></button><button class="text-button" id="skip-button" type="button">Not now</button></div>
     <p class="privacy-note">The example uses fictional responses and won’t be saved as your notes.</p>`;
 }
@@ -94,20 +94,36 @@ function renderTrial() {
 }
 function sessionVariants() { return state.firstVariant ? [getChoice(variants, state.firstVariant), ...variants.filter(v => v.id !== state.firstVariant)] : variants; }
 function hasPersonalGuide() { return notes.length > 0 || Object.values(supportOptions).some(value => String(value || '').trim()); }
+function buildSuggestion(signalId, contextId = demoSignals[signalId].context) {
+  const signal = demoSignals[signalId];
+  const context = getChoice(contexts, contextId);
+  const ranked = rankVariants(contextId);
+  const preferred = ranked.find(variant => variant.positive > 0);
+  const variant = preferred || (contextId === signal.context ? getChoice(variants, signal.variant) : getChoice(variants, 'wind'));
+  const reason = preferred
+    ? `In ${preferred.positive} of ${preferred.count} saved ${context.title.toLowerCase()} tries, you marked ${preferred.title.toLowerCase()} “felt better.” This is a starting point, not a prediction.`
+    : ranked.some(item => item.count > 0)
+      ? `Your check-in was “${signal.label.toLowerCase()}.” You have not marked a sound “felt better” in ${context.title.toLowerCase()} yet, so this is an exploratory starting point.`
+      : `Your check-in was “${signal.label.toLowerCase()}.” There are no saved ratings for ${context.title.toLowerCase()} yet, so this is an exploratory starting point.`;
+  return { context: contextId, variant: variant.id, reason };
+}
 function renderClinician() {
-  const people = [
-    { id: '4092', timing: '3 weeks after treatment', checkin: 'Checked in today', summary: 'Wind-down felt useful; asked for a quieter evening reminder.', next: 'Review at next scheduled contact', tone: 'steady' },
-    { id: '1837', timing: '2 weeks after treatment', checkin: 'No recent check-in', summary: 'No new response shared in this demo record.', next: 'Offer an optional check-in', tone: 'waiting' },
-    { id: '5274', timing: '5 weeks after treatment', checkin: 'Checked in yesterday', summary: 'Reported that the last sound felt no different.', next: 'Ask what would feel more supportive', tone: 'followup' }
-  ];
-  return `<p class="step-label">Care-team concept · fictional sample records</p><h1>A small window into home check-ins.</h1>
-    <p class="lead">A possible clinician view for reviewing what people choose to share and offering a follow-up. These example records are invented; BLOOM does not calculate relapse risk or adherence.</p>
-    <div class="clinician-banner"><span class="demo-tag">FICTIONAL DEMO DATA</span><span>For discussion only · no real patients or messages</span></div>
-    <div class="patient-list">${people.map(person => `<article class="patient-card"><div class="patient-top"><div><p class="eyebrow">PATIENT #${person.id}</p><h2>${person.timing}</h2></div><span class="patient-status ${person.tone}">${person.checkin}</span></div>
-      <p class="patient-summary">${person.summary}</p><div class="patient-next"><strong>Possible next step</strong><span>${person.next}</span></div>
-      <button class="secondary-button followup-button" data-followup="${person.id}" type="button">${state.followUps[person.id] ? 'Demo follow-up queued' : 'Simulate sending check-in'}</button>
-    </article>`).join('')}</div>
-    <p class="privacy-note">In a real service, access, consent, clinical review, and secure data handling would need to be designed with patients and care teams.</p>`;
+  const entries = [...notes].reverse();
+  const summaryRows = entries.length
+    ? entries.map(entry => {
+        const context = getChoice(contexts, entry.context)?.title || entry.context;
+        const variant = getChoice(variants, entry.variant)?.title || entry.variant;
+        const response = getChoice(feedback, entry.response)?.label || entry.response;
+        const checkin = entry.checkin && demoSignals[entry.checkin] ? ` · Check-in: ${demoSignals[entry.checkin].label}` : '';
+        return `<article class="summary-row"><div><strong>${escapeHtml(context)} · ${escapeHtml(variant)}</strong><span>${escapeHtml(response || 'No rating')} ${checkin ? escapeHtml(checkin) : ''}</span></div><time>${new Date(entry.at).toLocaleDateString()}</time></article>`;
+      }).join('')
+    : '<div class="empty-note">No rated experiences saved here yet. Try an experience and choose a response; your notes will appear here.</div>';
+  return `<p class="step-label">Your notes · stored in this browser</p><h1>A summary you choose whether to share.</h1>
+    <p class="lead">Review the check-ins and sound experiences you chose to record. Nothing is sent to a care team from this screen.</p>
+    <div class="clinician-banner"><span class="demo-tag">YOUR FIELD NOTES</span><span>Not a clinical assessment · no risk or adherence score</span></div>
+    <div class="summary-toolbar"><span>${entries.length} ${entries.length === 1 ? 'rated experience' : 'rated experiences'}</span><button class="primary-button" id="download-summary-button" type="button" ${entries.length ? '' : 'disabled'}>Download summary to share</button></div>
+    <div class="summary-list">${summaryRows}</div>
+    <p class="privacy-note">Downloading creates a text file on your device. BLOOM does not transmit it; you decide whether and with whom to share it.</p>`;
 }
 function renderGuide() {
   const cards = contexts.map(context => {
@@ -122,8 +138,8 @@ function renderGuide() {
         : 'No sound feedback saved for this moment yet.';
     return `<section class="guide-card"><div class="guide-card-top"><div><p class="eyebrow">${context.title.toUpperCase()}</p><h2>${preferred ? preferred.title + ' in the forest' : 'Still exploring'}</h2></div>${total ? `<span class="recipe-count">${total} ${total === 1 ? 'try' : 'tries'}</span>` : ''}</div>
       <p class="guide-evidence">${evidence}</p>
-      ${cue ? `<div class="guide-cue"><strong>Your support cue</strong><p>${escapeHtml(cue)}</p></div>` : '<p class="guide-no-cue">No personal support cue saved for this moment.</p>'}
-      <div class="guide-actions"><button class="primary-button" data-guide-try="${context.id}" type="button">Try this moment</button><button class="secondary-button" data-guide-edit="${context.id}" type="button">Edit support cue</button></div>
+      ${cue ? `<div class="guide-cue"><strong>Your optional real-world cue</strong><p>${escapeHtml(cue)}</p></div>` : '<p class="guide-no-cue">No real-world cue saved for this moment.</p>'}
+      <div class="guide-actions"><button class="primary-button" data-guide-try="${context.id}" type="button">Try this moment</button><button class="secondary-button" data-guide-edit="${context.id}" type="button">Edit real-world cue</button></div>
     </section>`;
   }).join('');
   return `<p class="step-label">Saved on this device · Your own notes</p><h1>Your field guide</h1>
@@ -144,14 +160,19 @@ function renderRecipe() {
     : best.count === 0
       ? 'No notes yet. Try a short experience to start learning what you prefer.'
       : 'None of the saved responses in this context say that a sound felt better. BLOOM won’t choose a favorite without that signal.';
-  const takeAlong = best.id === 'wind' ? 'If it suits you, pause and notice a breeze moving through nearby trees.' : 'If it suits you, notice the sound or movement of leaves nearby.';
+  const takeAlong = {
+    'wind-down': 'If it suits you, settle somewhere comfortable or notice the light by a window.',
+    reset: 'If it suits you, pause and notice your feet on the floor.',
+    outside: 'If it suits you, look outside from where you are; stepping out is optional.'
+  }[state.context];
   return `<p class="step-label">${state.previewSample ? 'Fictional example · sample history' : 'Your field note · saved on this device'}</p><h1>${hasSupportiveSignal ? 'A reset you can make your own.' : 'Nothing stood out as supportive yet.'}</h1>
     <p class="lead">${hasSupportiveSignal ? 'BLOOM keeps your response visible, so you can decide whether this recipe belongs in your field guide.' : 'That feedback is useful too. You don’t have to reuse something that didn’t feel supportive.'}</p>
     <div class="recipe-card">${hasSupportiveSignal ? `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>${best.title} in the forest</h2></div><span class="recipe-count">${best.count} ${best.count === 1 ? 'try' : 'tries'}</span></div>
       <div class="recipe-detail"><span class="mini-icon">${best.icon}</span><div><strong>${best.title}</strong><span>Forest scene · sound only</span></div></div>` : `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>No sound selected</h2></div></div>`}
       <div class="evidence"><strong>${state.previewSample ? 'What the sample notes say' : 'What your notes say'}</strong><br>${evidence}${state.previewSample ? '<br><span class="privacy-note">Fictional example only—not a real person’s history.</span>' : ''}</div>
-      ${supportOption ? `<div class="real-world"><strong>Something you chose for this moment</strong><p>${escapeHtml(supportOption)}</p></div>` : ''}
-      ${hasSupportiveSignal ? `<div class="real-world"><strong>A real-world version (you choose)</strong><p>${takeAlong}</p></div>` : ''}
+      ${state.sessionSignal ? `<div class="real-world"><strong>Your check-in</strong><p>${escapeHtml(demoSignals[state.sessionSignal]?.label || '')} · self-reported</p></div>` : ''}
+      ${supportOption ? `<div class="real-world"><strong>Your optional real-world cue</strong><p>${escapeHtml(supportOption)}</p></div>` : ''}
+      ${hasSupportiveSignal ? `<div class="real-world"><strong>An optional cue for this moment</strong><p>${takeAlong}</p></div>` : ''}
       ${state.session.some(x => x.skipped) ? '<p class="privacy-note">Skipped versions weren’t counted as feedback.</p>' : ''}
       <div class="actions"><button class="primary-button" id="again-button" type="button">${hasSupportiveSignal ? 'Try this again' : 'Try these sounds again'}</button><button class="secondary-button" id="edit-button" type="button">Change context</button></div>
       ${hasSupportiveSignal ? `<button class="quiet-link" id="new-session-button" type="button">Try the other sound next time: ${other.title.toLowerCase()}</button>` : ''}
@@ -164,16 +185,39 @@ function rankVariants(contextId) {
     return { ...v, count: entries.length, positive: entries.filter(n => n.response === 'better').length, score: entries.reduce((sum, n) => sum + (getChoice(feedback, n.response)?.score || 0), 0) };
   }).sort((a,b) => b.score - a.score || b.positive - a.positive || a.count - b.count);
 }
+function downloadCareSummary() {
+  if (!notes.length) return;
+  const lines = [
+    'BLOOM — Home experience summary',
+    `Created ${new Date().toLocaleString()}`,
+    'Based on self-reported choices and ratings saved in this browser. Not a clinical assessment.',
+    ''
+  ];
+  [...notes].reverse().forEach(entry => {
+    const context = getChoice(contexts, entry.context)?.title || entry.context;
+    const variant = getChoice(variants, entry.variant)?.title || entry.variant;
+    const response = getChoice(feedback, entry.response)?.label || entry.response || 'No rating';
+    const checkin = entry.checkin && demoSignals[entry.checkin] ? ` · Check-in: ${demoSignals[entry.checkin].label}` : '';
+    lines.push(`${new Date(entry.at).toLocaleDateString()} · ${context} · ${variant} · ${response}${checkin}`);
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 'bloom-home-experience-summary.txt';
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
 function bindScreen() {
   document.getElementById('patient-view-button')?.addEventListener('click', () => { state.view = 'patient'; state.screen = 'start'; render(); });
   document.getElementById('clinician-view-button')?.addEventListener('click', () => { stopSound(); state.view = 'clinician'; state.screen = 'clinician'; render(); });
   document.querySelectorAll('[data-signal]').forEach(button => button.addEventListener('click', () => { state.signal = button.dataset.signal; state.suggestion = null; render(); }));
-  document.getElementById('suggest-button')?.addEventListener('click', () => { state.suggestion = demoSignals[state.signal]; render(); });
-  document.getElementById('suggestion-context')?.addEventListener('change', event => { state.suggestion.context = event.target.value; render(); });
-  document.getElementById('suggestion-variant')?.addEventListener('change', event => { state.suggestion.variant = event.target.value; render(); });
-  document.getElementById('use-suggestion-button')?.addEventListener('click', () => { state.context = state.suggestion.context; state.previewSample = false; state.screen = 'trial'; state.firstVariant = state.suggestion.variant; state.index = 0; state.session = []; state.view = 'patient'; render(); });
+  document.getElementById('suggest-button')?.addEventListener('click', () => { state.suggestion = buildSuggestion(state.signal); render(); });
+  document.getElementById('suggestion-context')?.addEventListener('change', event => { state.suggestion = buildSuggestion(state.signal, event.target.value); render(); });
+  document.getElementById('suggestion-variant')?.addEventListener('change', event => { state.suggestion.variant = event.target.value; state.suggestion.reason = `You chose ${getChoice(variants, event.target.value).title.toLowerCase()} to try first. Your saved responses stay visible below.`; render(); });
+  document.getElementById('use-suggestion-button')?.addEventListener('click', () => { state.context = state.suggestion.context; state.previewSample = false; state.sessionSignal = state.signal; state.screen = 'trial'; state.firstVariant = state.suggestion.variant; state.index = 0; state.session = []; state.view = 'patient'; render(); });
   document.getElementById('clear-suggestion-button')?.addEventListener('click', () => { state.suggestion = null; render(); });
-  document.querySelectorAll('[data-followup]').forEach(button => button.addEventListener('click', () => { state.followUps[button.dataset.followup] = true; render(); }));
+  document.getElementById('download-summary-button')?.addEventListener('click', downloadCareSummary);
   document.querySelectorAll('[data-context]').forEach(button => button.addEventListener('click', () => { state.context = button.dataset.context; render(); }));
   document.getElementById('personal-guide-button')?.addEventListener('click', () => { state.screen = 'guide'; state.previewSample = false; render(); });
   document.getElementById('guide-back-button')?.addEventListener('click', () => { state.screen = 'start'; state.context = null; render(); });
@@ -187,20 +231,20 @@ function bindScreen() {
     supportOptions[state.context] = event.target.value.slice(0, 160);
     saveSupportOptions();
   });
-  document.getElementById('begin-button')?.addEventListener('click', () => { state.previewSample = false; state.firstVariant = null; state.screen = 'trial'; state.index = 0; state.session = []; render(); });
+  document.getElementById('begin-button')?.addEventListener('click', () => { state.previewSample = false; state.sessionSignal = null; state.firstVariant = null; state.screen = 'trial'; state.index = 0; state.session = []; render(); });
   document.getElementById('sample-journey-button')?.addEventListener('click', () => { state.previewSample = true; state.context = 'wind-down'; state.screen = 'recipe'; render(); });
   document.getElementById('skip-button')?.addEventListener('click', () => { state.screen = 'recipe'; state.context ||= contexts[0].id; render(); });
   document.getElementById('play-button')?.addEventListener('click', toggleSound);
   document.querySelectorAll('[data-feedback]').forEach(button => button.addEventListener('click', () => recordResponse(button.dataset.feedback)));
   document.getElementById('skip-trial')?.addEventListener('click', () => recordResponse(null));
   document.getElementById('again-button')?.addEventListener('click', () => { state.previewSample = false; state.firstVariant = null; state.screen = 'trial'; state.index = 0; state.session = []; render(); });
-  document.getElementById('edit-button')?.addEventListener('click', () => { state.previewSample = false; state.screen = 'start'; state.context = null; render(); });
-  document.getElementById('new-session-button')?.addEventListener('click', () => { state.previewSample = false; state.screen = 'start'; render(); });
+  document.getElementById('edit-button')?.addEventListener('click', () => { state.previewSample = false; state.suggestion = null; state.sessionSignal = null; state.screen = 'start'; state.context = null; render(); });
+  document.getElementById('new-session-button')?.addEventListener('click', () => { state.previewSample = false; state.suggestion = null; state.sessionSignal = null; state.screen = 'start'; render(); });
 }
 function recordResponse(response) {
   stopSound();
   const variant = sessionVariants()[state.index];
-  const entry = { id: crypto.randomUUID?.() || String(Date.now()), at: new Date().toISOString(), context: state.context, variant: variant.id, response, skipped: response === null };
+  const entry = { id: crypto.randomUUID?.() || String(Date.now()), at: new Date().toISOString(), context: state.context, variant: variant.id, response, checkin: state.sessionSignal, skipped: response === null };
   state.session.push(entry);
   if (response) { notes.push(entry); saveNotes(); }
   if (state.index === 0) { state.index = 1; state.screen = 'trial'; }
