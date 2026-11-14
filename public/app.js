@@ -195,7 +195,7 @@ function renderStart() {
       <div class="signal-options">${Object.entries(demoSignals).map(([id, item]) => `<button class="signal-option ${state.signal === id ? 'selected' : ''}" data-signal="${id}" type="button" aria-pressed="${state.signal === id}">${item.label}</button>`).join('')}</div>
       <label class="moment-field" for="moment-description"><span>Or describe what feels noticeable <span>(optional)</span></span><textarea id="moment-description" maxlength="160" placeholder="For example: indoors, tired, and wanting something steady">${escapeHtml(state.momentDescription)}</textarea><small>Read locally in this page only; not saved or sent. Avoid names or medical details.</small></label>
       <button class="secondary-button" id="suggest-button" type="button">Shape a sensory experiment</button>
-      ${state.suggestion ? `<div class="suggestion-card"><p class="eyebrow">A STARTING POINT TO CONSIDER</p><p class="suggestion-edit-label">Moment</p><select id="suggestion-context" class="suggestion-select">${contexts.map(item => `<option value="${item.id}" ${item.id === state.suggestion.context ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p class="suggestion-edit-label">Sound to try first</p><select id="suggestion-variant" class="suggestion-select">${availableVariants(state.suggestion.scene || selectedScene).map(item => `<option value="${item.id}" ${item.id === state.suggestion.variant ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p>${escapeHtml(state.suggestion.reason)}</p>${state.suggestion.variantEdited ? `<p class="edit-note">You changed the first sound to ${escapeHtml(getChoice(variants,state.suggestion.variant).title)}.</p>` : ''}<div class="suggestion-actions"><button class="primary-button" id="use-suggestion-button" type="button">Try this suggestion</button><button class="text-button" id="clear-suggestion-button" type="button">Clear suggestion</button></div></div>` : ''}
+      ${state.suggestion ? `<div class="suggestion-card"><p class="eyebrow">A STARTING POINT TO CONSIDER</p><p class="suggestion-edit-label">Moment</p><select id="suggestion-context" class="suggestion-select">${contexts.map(item => `<option value="${item.id}" ${item.id === state.suggestion.context ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p class="suggestion-edit-label">Sound to try first</p><select id="suggestion-variant" class="suggestion-select">${availableVariants().map(item => `<option value="${item.id}" ${item.id === state.suggestion.variant ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p>${escapeHtml(state.suggestion.reason)}</p>${state.suggestion.variantEdited ? `<p class="edit-note">You changed the first sound to ${escapeHtml(getChoice(variants,state.suggestion.variant).title)}.</p>` : ''}<div class="suggestion-actions"><button class="primary-button" id="use-suggestion-button" type="button">Try this suggestion</button><button class="text-button" id="clear-suggestion-button" type="button">Clear suggestion</button></div></div>` : ''}
       <p class="privacy-note">Suggestions use transparent keyword rules and your saved ratings. They are exploratory, not a reading of your mental state or clinical recommendations.</p>
     </section>
     ${renderLearningLedger()}
@@ -235,8 +235,8 @@ function renderTrial() {
       <button class="quiet-link" id="skip-trial" type="button">Skip this version</button>
     </div>`;
 }
-function availableVariants(scene = selectedScene) {
-  const ids = scene === 'aurora' ? ['snow-hush', 'ice-chimes'] : ['wind', 'leaves'];
+function availableVariants() {
+  const ids = selectedScene === 'aurora' ? ['snow-hush', 'ice-chimes'] : ['wind', 'leaves'];
   return ids.map(id => getChoice(variants, id));
 }
 function sessionVariants() {
@@ -255,56 +255,6 @@ function interpretMoment(text) {
   ];
   return rules.find(rule => rule.pattern.test(words)) || null;
 }
-function getRepeatedDislikeSuggestion() {
-  const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
-  const sceneFor = id => ['snow-hush', 'ice-chimes'].includes(id) ? 'aurora' : 'forest';
-  const histories = new Map();
-  // The most recent 100 notes are enough to find the last three ratings per sound.
-  for (let i = notes.length - 1; i >= Math.max(0, notes.length - 100); i--) {
-    const note = notes[i];
-    if (!note.response || Date.parse(note.at) < cutoff) continue;
-    const key = sceneFor(note.variant) + ':' + note.variant;
-    const history = histories.get(key) || [];
-    if (history.length < 3) {
-      history.push(note);
-      histories.set(key, history);
-    }
-  }
-  const triggers = variants.map(variant => {
-    const scene = sceneFor(variant.id);
-    const history = histories.get(scene + ':' + variant.id) || [];
-    const dislikes = history.filter(note => note.response === 'worse').length;
-    return history[0]?.response === 'worse' && dislikes >= 2
-      ? { variant, scene, history, dislikes, at: Date.parse(history[0].at) }
-      : null;
-  }).filter(Boolean).sort((a, b) => b.at - a.at);
-  const trigger = triggers[0];
-  if (!trigger) return null;
-
-  let targetScene = 'aurora';
-  let candidates = availableVariants(targetScene).filter(variant => variant.id !== trigger.variant.id);
-  const fresh = candidates.filter(variant => {
-    const history = histories.get(targetScene + ':' + variant.id) || [];
-    return !(history[0]?.response === 'worse' && history.filter(note => note.response === 'worse').length >= 2);
-  });
-  if (fresh.length) candidates = fresh;
-  else {
-    targetScene = 'forest';
-    candidates = availableVariants(targetScene).filter(variant => variant.id !== trigger.variant.id);
-  }
-  const score = variant => {
-    const history = histories.get(targetScene + ':' + variant.id) || [];
-    return history.filter(note => note.response === 'better').length * 2 -
-      history.filter(note => note.response === 'worse').length * 3;
-  };
-  candidates.sort((a, b) => score(b) - score(a));
-  const next = candidates[0];
-  if (!next) return null;
-  const latest = trigger.history[0];
-  return { from: trigger.variant, fromScene: trigger.scene, count: trigger.dislikes, total: trigger.history.length,
-    context: latest.context || 'wind-down', checkin: latest.checkin || null, scene: targetScene, variant: next.id };
-}
-
 function rankForCheckin(contextId, checkinTag) {
   const entries = notes.filter(note => note.context === contextId && note.checkin === checkinTag && (note.scene || 'forest') === selectedScene);
   return availableVariants().map(variant => {
@@ -319,14 +269,12 @@ function buildSuggestion(signalId, contextId = demoSignals[signalId].context, mo
   const taggedPreference = taggedRank.find(variant => variant.positive > 0);
   const contextPreference = rankVariants(contextId).find(variant => variant.positive > 0);
   const preferred = taggedPreference || contextPreference;
-  const adaptation = getRepeatedDislikeSuggestion();
-  const targetScene = adaptation?.scene || selectedScene;
-  const sceneOptions = availableVariants(targetScene);
+  const sceneOptions = availableVariants();
   const suggestedId = momentMatch?.context === contextId
     ? momentMatch.variant
     : contextId === signal.context ? signal.variant : 'wind';
   const defaultVariant = sceneOptions.find(candidate => candidate.id === suggestedId) || sceneOptions[0];
-  const variant = adaptation ? getChoice(variants, adaptation.variant) : (sceneOptions.find(candidate => candidate.id === preferred?.id) || defaultVariant);
+  const variant = sceneOptions.find(candidate => candidate.id === preferred?.id) || defaultVariant;
   const historyReason = taggedPreference
     ? `In ${taggedPreference.positive} of ${taggedPreference.count} saved tries after similar check-ins, you marked ${taggedPreference.title.toLowerCase()} “felt better.”`
     : contextPreference
@@ -337,16 +285,12 @@ function buildSuggestion(signalId, contextId = demoSignals[signalId].context, mo
     : descriptionEntered
       ? `No matching keywords were found, so BLOOM used your “${signal.label.toLowerCase()}” check-in instead.`
       : `You chose the “${signal.label.toLowerCase()}” check-in.`;
-  const adaptationReason = adaptation
-    ? `You rated ${getChoice(variants, adaptation.from).title.toLowerCase()} “felt worse” on ${adaptation.count} of your last ${adaptation.total} tries. BLOOM changed this suggestion to ${variant.title} in the ${targetScene === 'aurora' ? 'northern-lights' : 'forest'} scene.`
-    : '';
   return {
     context: contextId,
     variant: variant.id,
-    scene: targetScene,
-    checkinTag: adaptation?.checkin || momentMatch?.tag || signalId,
+    checkinTag: momentMatch?.tag || signalId,
     matchDescription: momentMatch?.phrase || '',
-    reason: `${inputReason} ${historyReason} ${adaptationReason} This is an exploratory starting point, not a prediction.`
+    reason: `${inputReason} ${historyReason} This is an exploratory starting point, not a prediction.`
   };
 }
 function classifyCommunityMessage(text) {
@@ -654,12 +598,7 @@ function bindScreen() {
   });
   document.getElementById('suggestion-context')?.addEventListener('change', event => { state.suggestion = buildSuggestion(state.signal, event.target.value, state.momentMatch, state.descriptionEntered); render(); });
   document.getElementById('suggestion-variant')?.addEventListener('change', event => { state.suggestion.variant = event.target.value; state.suggestion.variantEdited = true; render(); });
-  document.getElementById('use-suggestion-button')?.addEventListener('click', () => {
-    const suggestion = state.suggestion;
-    state.context = suggestion.context; state.previewSample = false; state.sessionSignal = suggestion.checkinTag;
-    state.screen = 'trial'; state.firstVariant = suggestion.variant; state.index = 0; state.session = []; state.view = 'patient';
-    state.suggestion = null; setScene(suggestion.scene || selectedScene); render();
-  });
+  document.getElementById('use-suggestion-button')?.addEventListener('click', () => { state.context = state.suggestion.context; state.previewSample = false; state.sessionSignal = state.suggestion.checkinTag; state.screen = 'trial'; state.firstVariant = state.suggestion.variant; state.index = 0; state.session = []; state.view = 'patient'; render(); });
   document.getElementById('clear-suggestion-button')?.addEventListener('click', () => { state.suggestion = null; state.momentMatch = null; state.descriptionEntered = false; render(); });
   document.getElementById('download-summary-button')?.addEventListener('click', downloadCareSummary);
   document.querySelectorAll('[data-open-support]').forEach(button => button.addEventListener('click', openSupportDialog));
@@ -701,18 +640,6 @@ function recordResponse(response) {
   const entry = { id: crypto.randomUUID?.() || String(Date.now()), at: new Date().toISOString(), context: state.context, variant: variant.id, scene: selectedScene, response, checkin: state.sessionSignal, soundLevel: state.soundLevel, skipped: response === null };
   state.session.push(entry);
   if (response) { notes.push(entry); saveNotes(); }
-  const adaptation = response === 'worse' ? getRepeatedDislikeSuggestion() : null;
-  if (adaptation && adaptation.from.id === variant.id && adaptation.fromScene === (entry.scene || 'forest')) {
-    state.context = entry.context;
-    state.sessionSignal = entry.checkin;
-    state.previewSample = false;
-    state.suggestion = buildSuggestion(state.signal, entry.context, null, false);
-    state.screen = 'start';
-    state.index = 0;
-    state.session = [];
-    render();
-    return;
-  }
   if (state.index === 0) { state.index = 1; state.screen = 'trial'; }
   else state.screen = 'recipe';
   render();
@@ -866,11 +793,5 @@ function renderHistory() {
   host.innerHTML = [...notes].reverse().map(n => `<div class="history-row"><strong>${getChoice(variants,n.variant)?.title || previousVariantNames[n.variant] || n.variant} · ${getChoice(contexts,n.context)?.title || n.context}</strong><span>${getChoice(feedback,n.response)?.label || n.response} · ${new Date(n.at).toLocaleDateString()}</span></div>`).join('');
 }
 
-const savedAdaptation = getRepeatedDislikeSuggestion();
-if (savedAdaptation) {
-  state.context = savedAdaptation.context;
-  if (savedAdaptation.checkin && demoSignals[savedAdaptation.checkin]) state.signal = savedAdaptation.checkin;
-  state.suggestion = buildSuggestion(state.signal, savedAdaptation.context, null, false);
-}
 render();
 setInterval(checkReminderSchedule, 30000);
