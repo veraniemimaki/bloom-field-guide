@@ -24,7 +24,11 @@ const sampleNotes = [
 
 let notes = loadNotes();
 let supportOptions = loadSupportOptions();
-let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, followUps: {} };
+let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, followUps: {}, communityTab: 'room', communityMessage: '', communityNotice: '', communityPosts: [
+  { id: 'peer-1', author: 'Member 18 · sample', text: 'I keep a soft nature sound low while I make tea.', status: 'published', sample: true },
+  { id: 'peer-2', author: 'Member 42 · sample', text: 'Looking out of my window for one minute is an easy pause.', status: 'published', sample: true },
+  { id: 'review-1', author: 'Member 07 · sample', text: 'You should stop your prescribed treatment if it makes you tired.', status: 'pending', sample: true, flag: 'Possible direct treatment advice', flagLevel: 'review' }
+] };
 const demoSignals = {
   restless: { label: 'Restless night', detail: 'A self-reported demo check-in: sleep felt unsettled.', context: 'wind-down', variant: 'wind', reason: 'A quieter wind-down moment may be worth trying after a restless night.' },
   overloaded: { label: 'Too much going on', detail: 'A self-reported demo check-in: the moment feels busy or overstimulating.', context: 'reset', variant: 'leaves', reason: 'A brief pause with a lighter leaf sound may be worth trying when things feel busy.' },
@@ -58,8 +62,10 @@ function render() {
   if (state.screen === 'recipe') app.innerHTML = renderRecipe();
   if (state.screen === 'guide') app.innerHTML = renderGuide();
   if (state.screen === 'clinician') app.innerHTML = renderClinician();
+  if (state.screen === 'community') app.innerHTML = renderCommunity();
   document.getElementById('patient-view-button')?.classList.toggle('active', state.view === 'patient');
   document.getElementById('clinician-view-button')?.classList.toggle('active', state.view === 'clinician');
+  document.getElementById('community-view-button')?.classList.toggle('active', state.view === 'community');
   bindScreen();
 }
 function renderStart() {
@@ -141,6 +147,36 @@ function buildSuggestion(signalId, contextId = demoSignals[signalId].context, mo
     matchDescription: momentMatch?.phrase || '',
     reason: `${inputReason} ${historyReason} This is an exploratory starting point, not a prediction.`
   };
+}
+function classifyCommunityMessage(text) {
+  const rules = [
+    { pattern: /\b(kill myself|suicid|self[- ]?harm|hurt myself|end my life)\b/i, flag: 'Possible urgent distress language', flagLevel: 'urgent' },
+    { pattern: /\b(stop|skip|change|increase|decrease)\b.{0,45}\b(medication|medicine|prescription|treatment|dose)\b/i, flag: 'Possible direct treatment advice', flagLevel: 'review' },
+    { pattern: /\b(my address is|my phone number is|email me at)\b/i, flag: 'Possible personal information', flagLevel: 'review' }
+  ];
+  return rules.find(rule => rule.pattern.test(text)) || null;
+}
+function renderCommunity() {
+  const published = state.communityPosts.filter(post => post.status === 'published');
+  const pending = state.communityPosts.filter(post => post.status === 'pending');
+  const decided = state.communityPosts.filter(post => post.humanDecision);
+  const room = state.communityTab === 'room';
+  const visiblePosts = room ? published : pending;
+  const cards = visiblePosts.length
+    ? visiblePosts.map(post => `<article class="community-post"><div class="community-post-top"><span>${escapeHtml(post.author)}</span>${post.flag ? `<span class="flag-label">${escapeHtml(post.flag)} · mock flag</span>` : post.sample ? '<span class="demo-tag">FICTIONAL SAMPLE</span>' : '<span class="post-label">Peer note</span>'}</div><p>${escapeHtml(post.text)}</p>${!room && post.flag ? `<p class="flag-rationale">Held from the peer room until a human makes the final demo decision.</p>` : ''}</article>`).join('')
+    : room
+      ? '<div class="empty-note">No peer notes in this demo room yet.</div>'
+      : '<div class="empty-note">No comments are waiting for human review.</div>';
+  const reviewCards = room ? '' : decided.map(post => `<article class="community-post reviewed-post"><div class="community-post-top"><span>${escapeHtml(post.author)}</span><span class="review-decision">${post.humanDecision === 'approved' ? 'Human approved' : 'Human did not approve'}</span></div><p>${escapeHtml(post.text)}</p></article>`).join('');
+  return `<p class="step-label">Community concept · fictional local demo</p><h1>Small ideas, shared gently.</h1>
+    <p class="lead">A peer space for sharing sensory ideas that made home feel a little easier. This is a single-browser prototype: posts are not shared with other visitors.</p>
+    <div class="community-warning"><strong>Moderation preview only.</strong> Flagging uses demo keyword rules, not Gemini. No professional is alerted; the review screen is not access-controlled. Use fictional messages only.</div>
+    <div class="community-tabs"><button class="secondary-button ${room ? 'selected' : ''}" id="community-room-tab" type="button">Peer room</button><button class="secondary-button ${!room ? 'selected' : ''}" id="community-review-tab" type="button">Human review preview · ${pending.length}</button></div>
+    ${room ? `<section class="community-composer"><label for="community-message">Share a small sensory idea</label><textarea id="community-message" maxlength="280" placeholder="A sound, small ritual, or setting that you chose to try"></textarea><p class="privacy-note">Avoid names, treatment advice, or personal details. Your demo post stays in this page and clears when it reloads.</p><button class="primary-button" id="community-send-button" type="button">Post to demo room</button></section>` : `<div class="review-banner"><span class="demo-tag">MOCK AI FLAG</span><span>Flagged content stays hidden from the peer room until a human makes the final demo decision.</span></div>`}
+    <div class="community-list">${cards}${reviewCards}</div>
+    ${!room && pending.length ? `<div class="review-actions">${pending.map(post => `<div class="review-action-row"><span>Final decision for ${escapeHtml(post.author)}</span><button class="secondary-button" data-review="approve" data-post-id="${post.id}" type="button">Approve for demo room</button><button class="text-button" data-review="remove" data-post-id="${post.id}" type="button">Do not approve</button></div>`).join('')}</div>` : ''}
+    ${state.communityNotice ? `<div class="community-notice" role="status">${escapeHtml(state.communityNotice)}</div>` : ''}
+    <p class="privacy-note">A real version needs shared secure storage, a protected reviewer account, Gemini moderation, trained human coverage, and a clear escalation plan. This prototype provides none of those.</p>`;
 }
 function renderClinician() {
   const entries = [...notes].reverse();
@@ -246,6 +282,33 @@ function downloadCareSummary() {
   URL.revokeObjectURL(url);
 }
 function bindScreen() {
+  document.getElementById('community-view-button')?.addEventListener('click', () => { stopSound(); state.view = 'community'; state.screen = 'community'; render(); });
+  document.getElementById('community-room-tab')?.addEventListener('click', () => { state.communityTab = 'room'; state.communityNotice = ''; render(); });
+  document.getElementById('community-review-tab')?.addEventListener('click', () => { state.communityTab = 'review'; state.communityNotice = ''; render(); });
+  document.getElementById('community-send-button')?.addEventListener('click', () => {
+    const field = document.getElementById('community-message');
+    const text = String(field?.value || '').trim();
+    if (!text) { state.communityNotice = 'Write a short sensory idea first.'; render(); return; }
+    if (text.length > 280) { state.communityNotice = 'Keep the demo note under 280 characters.'; render(); return; }
+    const flag = classifyCommunityMessage(text);
+    const post = { id: `local-${Date.now()}`, author: 'You · demo', text, status: flag ? 'pending' : 'published', sample: false, flag: flag?.flag || null, flagLevel: flag?.flagLevel || null };
+    state.communityPosts.push(post);
+    state.communityTab = flag ? 'review' : 'room';
+    state.communityNotice = flag
+      ? `The simulated moderation check flagged this message: ${flag.flag}. It is hidden from the peer room while awaiting a human decision. No professional was notified by this demo.${flag.flagLevel === 'urgent' ? ' If you need immediate help, contact local emergency support or someone you trust.' : ''}`
+      : 'Your demo note is visible in this browser only; it was not shared with other people.';
+    render();
+  });
+  document.querySelectorAll('[data-review]').forEach(button => button.addEventListener('click', () => {
+    const post = state.communityPosts.find(item => item.id === button.dataset.postId);
+    if (!post) return;
+    post.humanDecision = button.dataset.review === 'approve' ? 'approved' : 'not approved';
+    post.status = post.humanDecision === 'approved' ? 'published' : 'removed';
+    state.communityNotice = post.humanDecision === 'approved'
+      ? 'Human reviewer approved this sample for the local demo room.'
+      : 'Human reviewer did not approve this sample; it remains out of the demo room.';
+    render();
+  }));
   document.getElementById('patient-view-button')?.addEventListener('click', () => { state.view = 'patient'; state.screen = 'start'; render(); });
   document.getElementById('clinician-view-button')?.addEventListener('click', () => { stopSound(); state.view = 'clinician'; state.screen = 'clinician'; render(); });
   document.querySelectorAll('[data-signal]').forEach(button => button.addEventListener('click', () => { state.signal = button.dataset.signal; state.suggestion = null; state.momentMatch = null; state.descriptionEntered = false; render(); }));
