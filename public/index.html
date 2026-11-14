@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#f6f5ef" />
   <title>BLOOM — Find a reset that feels like yours</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=bloom-scenes-20261114" />
 </head>
 <body>
   <main class="shell">
@@ -16,10 +16,13 @@
       <button class="quiet-button" id="history-button" type="button">My field notes</button>
     </header>
 
-    <section class="scene-banner" aria-label="Illustrated forest scene">
+    <section class="scene-banner forest-scene" id="scene-banner" aria-label="Forest visual backdrop">
+      <div class="aurora-sky" aria-hidden="true"><span class="aurora-ribbon ribbon-one"></span><span class="aurora-ribbon ribbon-two"></span><span class="aurora-ribbon ribbon-three"></span><span class="aurora-starfield"></span></div>
       <div class="sun"></div><div class="ridge ridge-back"></div><div class="ridge ridge-front"></div>
-      <div class="tree-line" aria-hidden="true">♠　♠　♠　♠　♠　♠　♠　♠　♠</div>
-      <div class="scene-caption"><span class="eyebrow">A MOMENT TO YOURSELF</span><span class="scene-title">A forest, just after rain</span></div>
+      <div class="tree-line" aria-hidden="true"><span class="conifer tree-small"><i></i><i></i><i></i><b></b></span><span class="conifer tree-tall"><i></i><i></i><i></i><b></b></span><span class="conifer tree-mid"><i></i><i></i><i></i><b></b></span><span class="conifer tree-small"><i></i><i></i><i></i><b></b></span><span class="conifer tree-tall"><i></i><i></i><i></i><b></b></span><span class="conifer tree-mid"><i></i><i></i><i></i><b></b></span><span class="conifer tree-small"><i></i><i></i><i></i><b></b></span><span class="conifer tree-tall"><i></i><i></i><i></i><b></b></span><span class="conifer tree-mid"><i></i><i></i><i></i><b></b></span></div>
+      <nav class="scene-switch" aria-label="Choose visual backdrop"><button class="scene-switch-button active" data-scene="forest" type="button" aria-pressed="true">Forest</button><button class="scene-switch-button" data-scene="aurora" type="button" aria-pressed="false">Northern lights</button></nav>
+      <span class="scene-note" id="scene-note">Visual backdrop only · sound experiment stays the same</span>
+      <div class="scene-caption"><span class="eyebrow" id="scene-eyebrow">A MOMENT TO YOURSELF</span><span class="scene-title" id="scene-title">A forest, just after rain</span></div>
     </section>
 
     <section class="content" id="app" aria-live="polite"></section>
@@ -44,6 +47,6 @@
     <p class="privacy-note">This prototype stores your feedback only in this browser. Use fictional information in a public demo.</p>
     <form method="dialog"><button class="primary-button">Got it</button></form>
   </dialog>
-  <script src="app.js"></script>
+  <script src="app.js?v=bloom-scenes-20261114"></script>
 </body>
 </html>
