@@ -5,8 +5,8 @@ const contexts = [
   { id: 'outside', title: 'Feel a little outdoors', sub: 'Bring nature a bit closer', icon: '⌁' }
 ];
 const variants = [
-  { id: 'water', title: 'Flowing water', description: 'A gentle stream moves through the forest.', icon: '〰', kind: 'water' },
-  { id: 'birds', title: 'Birdsong', description: 'Small birds call from the tree canopy.', icon: '♫', kind: 'birds' }
+  { id: 'wind', title: 'Soft wind', description: 'A low, steady breeze moves through the forest canopy.', icon: '〰', kind: 'wind' },
+  { id: 'leaves', title: 'Rustling leaves', description: 'A light rustle moves through the tree canopy.', icon: '♧', kind: 'leaves' }
 ];
 const feedback = [
   { id: 'better', label: 'Felt better', icon: '↑', score: 1 },
@@ -15,17 +15,17 @@ const feedback = [
 ];
 // Fictional example data is kept separate from a person's saved field notes.
 const sampleNotes = [
-  { context: 'wind-down', variant: 'water', response: 'better' },
-  { context: 'wind-down', variant: 'birds', response: 'same' },
-  { context: 'wind-down', variant: 'water', response: 'better' },
-  { context: 'reset', variant: 'birds', response: 'better' }
+  { context: 'wind-down', variant: 'wind', response: 'better' },
+  { context: 'wind-down', variant: 'leaves', response: 'same' },
+  { context: 'wind-down', variant: 'wind', response: 'better' },
+  { context: 'reset', variant: 'leaves', response: 'better' }
 ];
 
 let notes = loadNotes();
 let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false };
 let audioContext = null;
 let soundNodes = [];
-let chirpTimer = null;
+let soundTimer = null;
 let playing = false;
 
 function loadNotes() {
@@ -70,7 +70,7 @@ function renderRecipe() {
     : best.count === 1
     ? `You’ve tried ${best.title.toLowerCase()} once in this context. There isn’t a pattern yet.`
     : `You chose ${best.title.toLowerCase()} as “felt better” ${best.positive} of ${best.count} times in this context.`;
-  const takeAlong = best.id === 'water' ? 'If it suits you, try noticing rain or a stream nearby.' : 'If it suits you, pause and notice birdsong outside or by an open window.';
+  const takeAlong = best.id === 'wind' ? 'If it suits you, pause and notice a breeze moving through nearby trees.' : 'If it suits you, notice the sound or movement of leaves nearby.';
   return `<p class="step-label">${state.previewSample ? 'Fictional example · sample history' : 'Your field note · saved on this device'}</p><h1>A reset you can make your own.</h1>
     <p class="lead">BLOOM keeps your response visible, so you can decide whether this recipe belongs in your field guide.</p>
     <div class="recipe-card"><div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>${best.title} in the forest</h2></div><span class="recipe-count">${best.count} ${best.count === 1 ? 'try' : 'tries'}</span></div>
@@ -120,37 +120,46 @@ async function toggleSound() {
   await audioContext.resume();
   const sound = variants[state.index].kind;
   playing = true;
-  if (sound === 'water') startWater(audioContext); else startBirds(audioContext);
+  if (sound === 'wind') startWind(audioContext); else startLeaves(audioContext);
   render();
 }
 function track(node) { soundNodes.push(node); return node; }
-function startWater(ctx) {
+function makeNoise(ctx) {
   const size = ctx.sampleRate * 2;
   const buffer = ctx.createBuffer(1, size, ctx.sampleRate);
   const data = buffer.getChannelData(0);
-  for (let i=0;i<size;i++) data[i] = (Math.random()*2-1) * .24;
+  for (let i=0;i<size;i++) data[i] = (Math.random()*2-1) * .34;
   const source = track(ctx.createBufferSource()); source.buffer = buffer; source.loop = true;
-  const filter = track(ctx.createBiquadFilter()); filter.type = 'lowpass'; filter.frequency.value = 820;
-  const lfo = track(ctx.createOscillator()); lfo.frequency.value = .16;
-  const depth = track(ctx.createGain()); depth.gain.value = 330;
+  source.start();
+  return source;
+}
+function startWind(ctx) {
+  const source = makeNoise(ctx);
+  const filter = track(ctx.createBiquadFilter()); filter.type = 'lowpass'; filter.frequency.value = 430;
+  const lfo = track(ctx.createOscillator()); lfo.frequency.value = .075;
+  const depth = track(ctx.createGain()); depth.gain.value = 150;
   lfo.connect(depth); depth.connect(filter.frequency);
-  const gain = track(ctx.createGain()); gain.gain.value = .12;
-  source.connect(filter); filter.connect(gain); gain.connect(ctx.destination); source.start(); lfo.start();
+  const gain = track(ctx.createGain()); gain.gain.value = .17;
+  source.connect(filter); filter.connect(gain); gain.connect(ctx.destination); lfo.start();
 }
-function chirp(ctx, when) {
-  const osc = track(ctx.createOscillator()); const gain = track(ctx.createGain());
-  osc.type = 'sine'; osc.frequency.setValueAtTime(1900 + Math.random()*450, when); osc.frequency.exponentialRampToValueAtTime(1250 + Math.random()*250, when + .16);
-  gain.gain.setValueAtTime(.0001, when); gain.gain.exponentialRampToValueAtTime(.055, when + .025); gain.gain.exponentialRampToValueAtTime(.0001, when + .19);
-  osc.connect(gain); gain.connect(ctx.destination); osc.start(when); osc.stop(when + .21);
-}
-function startBirds(ctx) {
-  const bed = track(ctx.createOscillator()); const bedGain = track(ctx.createGain());
-  bed.type = 'sine'; bed.frequency.value = 160; bedGain.gain.value = .012; bed.connect(bedGain); bedGain.connect(ctx.destination); bed.start();
-  const schedule = () => { if (!playing) return; chirp(ctx, ctx.currentTime + .05); if (Math.random() > .45) chirp(ctx, ctx.currentTime + .34); chirpTimer = setTimeout(schedule, 1100 + Math.random()*1200); };
-  schedule();
+function startLeaves(ctx) {
+  const source = makeNoise(ctx);
+  const filter = track(ctx.createBiquadFilter()); filter.type = 'highpass'; filter.frequency.value = 780;
+  const gain = track(ctx.createGain()); gain.gain.value = 0;
+  source.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  const rustle = () => {
+    if (!playing) return;
+    const now = ctx.currentTime;
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setValueAtTime(.002, now);
+    gain.gain.linearRampToValueAtTime(.055, now + .18 + Math.random()*.18);
+    gain.gain.linearRampToValueAtTime(.002, now + .8 + Math.random()*.5);
+    soundTimer = setTimeout(rustle, 1000 + Math.random()*1100);
+  };
+  rustle();
 }
 function stopSound() {
-  playing = false; clearTimeout(chirpTimer);
+  playing = false; clearTimeout(soundTimer);
   soundNodes.forEach(node => { try { node.stop?.(); } catch {} try { node.disconnect?.(); } catch {} });
   soundNodes = [];
 }
@@ -161,7 +170,9 @@ document.getElementById('clear-button').addEventListener('click', () => { notes 
 function renderHistory() {
   const host = document.getElementById('history-content');
   if (!notes.length) { host.innerHTML = '<div class="empty-note">No saved field notes yet. Try a short experience to start one.</div>'; return; }
-  host.innerHTML = [...notes].reverse().map(n => `<div class="history-row"><strong>${getChoice(variants,n.variant).title} · ${getChoice(contexts,n.context).title}</strong><span>${getChoice(feedback,n.response).label} · ${new Date(n.at).toLocaleDateString()}</span></div>`).join('');
+  const previousVariantNames = { water: 'Flowing water (previous demo)', birds: 'Birdsong (previous demo)' };
+  host.innerHTML = [...notes].reverse().map(n => `<div class="history-row"><strong>${getChoice(variants,n.variant)?.title || previousVariantNames[n.variant] || n.variant} · ${getChoice(contexts,n.context)?.title || n.context}</strong><span>${getChoice(feedback,n.response)?.label || n.response} · ${new Date(n.at).toLocaleDateString()}</span></div>`).join('');
 }
 
 render();
+
