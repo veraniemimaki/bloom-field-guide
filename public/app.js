@@ -653,7 +653,7 @@ function bindScreen() {
     supportOptions[state.context] = event.target.value.slice(0, 160);
     saveSupportOptions();
   });
-  document.getElementById('begin-button')?.addEventListener('click', () => { state.previewSample = false; state.sessionSignal = null; state.firstVariant = null; state.screen = 'trial'; state.index = 0; state.session = []; render(); });
+  document.getElementById('begin-button')?.addEventListener('click', () => { state.previewSample = false; state.context = state.context || demoSignals[state.signal]?.context || contexts[0].id; state.sessionSignal = null; state.firstVariant = null; state.screen = 'trial'; state.index = 0; state.session = []; render(); });
   document.getElementById('sample-journey-button')?.addEventListener('click', () => { state.previewSample = true; state.context = 'wind-down'; state.screen = 'recipe'; render(); });
   document.getElementById('skip-button')?.addEventListener('click', () => { state.screen = 'recipe'; state.context ||= contexts[0].id; render(); });
   document.getElementById('play-button')?.addEventListener('click', toggleSound);
