@@ -421,6 +421,8 @@ function stopSound() {
 function setScene(scene) {
   if (!['forest', 'aurora'].includes(scene)) return;
   selectedScene = scene;
+  document.body.classList.toggle('aurora-theme', scene === 'aurora');
+  document.querySelector('meta[name="theme-color"]').content = scene === 'aurora' ? '#0c1427' : '#f3f7ef';
   const banner = document.getElementById('scene-banner');
   banner.classList.toggle('forest-scene', scene === 'forest');
   banner.classList.toggle('aurora-scene', scene === 'aurora');
