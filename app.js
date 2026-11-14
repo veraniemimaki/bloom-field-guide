@@ -50,6 +50,7 @@ function render() {
   if (state.screen === 'start') app.innerHTML = renderStart();
   if (state.screen === 'trial') app.innerHTML = renderTrial();
   if (state.screen === 'recipe') app.innerHTML = renderRecipe();
+  if (state.screen === 'guide') app.innerHTML = renderGuide();
   bindScreen();
 }
 function renderStart() {
@@ -57,7 +58,7 @@ function renderStart() {
   return `<p class="step-label">A two-minute sensory experiment · 1 of 3</p>
     <h1>What would feel useful right now?</h1>
     <p class="lead">Choose a moment. We’ll explore two versions of the same forest scene, changing only the sound.</p>
-    <button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a returning-user example <span aria-hidden="true">↗</span></button>
+    <div class="start-links"><button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a fictional returning-user example <span aria-hidden="true">↗</span></button>${hasPersonalGuide() ? '<button class="secondary-button sample-button" id="personal-guide-button" type="button">Open my field guide <span aria-hidden="true">→</span></button>' : ''}</div>
     <div class="choice-grid">${contexts.map(c => `<button class="choice-card ${state.context === c.id ? 'selected' : ''}" data-context="${c.id}" type="button"><span class="choice-icon">${c.icon}</span><span><span class="choice-title">${c.title}</span><span class="choice-sub">${c.sub}</span></span></button>`).join('')}</div>
     ${state.context ? `<label class="support-option-field" for="support-option"><span class="support-option-title">A small support option for this moment <span>(optional)</span></span><textarea id="support-option" maxlength="160" placeholder="For example: sit by an open window">${escapeHtml(supportOption)}</textarea><span class="privacy-note">Saved only on this device. You can change or remove it anytime.</span></label>` : ''}
     <div class="actions"><button class="primary-button" id="begin-button" type="button" ${state.context ? '' : 'disabled'}>Begin the experience <span aria-hidden="true">→</span></button><button class="text-button" id="skip-button" type="button">Not now</button></div>
@@ -74,6 +75,29 @@ function renderTrial() {
       <p class="feedback-label">How did it feel for you?</p><div class="feedback-grid">${feedback.map(f => `<button class="feedback-button" data-feedback="${f.id}" type="button"><span>${f.icon}</span>${f.label}</button>`).join('')}</div>
       <button class="quiet-link" id="skip-trial" type="button">Skip this version</button>
     </div>`;
+}
+function hasPersonalGuide() { return notes.length > 0 || Object.values(supportOptions).some(value => String(value || '').trim()); }
+function renderGuide() {
+  const cards = contexts.map(context => {
+    const ranked = rankVariants(context.id);
+    const preferred = ranked.find(variant => variant.positive > 0);
+    const total = ranked.reduce((sum, variant) => sum + variant.count, 0);
+    const cue = String(supportOptions[context.id] || '').trim();
+    const evidence = preferred
+      ? `You marked ${preferred.title.toLowerCase()} as “felt better” ${preferred.positive} of ${preferred.count} times in this moment.`
+      : total
+        ? 'No sound has been marked “felt better” yet. You can try again or change the options.'
+        : 'No sound feedback saved for this moment yet.';
+    return `<section class="guide-card"><div class="guide-card-top"><div><p class="eyebrow">${context.title.toUpperCase()}</p><h2>${preferred ? preferred.title + ' in the forest' : 'Still exploring'}</h2></div>${total ? `<span class="recipe-count">${total} ${total === 1 ? 'try' : 'tries'}</span>` : ''}</div>
+      <p class="guide-evidence">${evidence}</p>
+      ${cue ? `<div class="guide-cue"><strong>Your support cue</strong><p>${escapeHtml(cue)}</p></div>` : '<p class="guide-no-cue">No personal support cue saved for this moment.</p>'}
+      <div class="guide-actions"><button class="primary-button" data-guide-try="${context.id}" type="button">Try this moment</button><button class="secondary-button" data-guide-edit="${context.id}" type="button">Edit support cue</button></div>
+    </section>`;
+  }).join('');
+  return `<p class="step-label">Saved on this device · Your own notes</p><h1>Your field guide</h1>
+    <p class="lead">A record of what you tried and what you chose to keep. It’s yours to update whenever you like.</p>
+    <div class="guide-grid">${cards}</div>
+    <div class="actions"><button class="secondary-button" id="guide-back-button" type="button">Back to moments</button></div>`;
 }
 function renderRecipe() {
   const ranked = rankVariants(state.context);
@@ -110,6 +134,14 @@ function rankVariants(contextId) {
 }
 function bindScreen() {
   document.querySelectorAll('[data-context]').forEach(button => button.addEventListener('click', () => { state.context = button.dataset.context; render(); }));
+  document.getElementById('personal-guide-button')?.addEventListener('click', () => { state.screen = 'guide'; state.previewSample = false; render(); });
+  document.getElementById('guide-back-button')?.addEventListener('click', () => { state.screen = 'start'; state.context = null; render(); });
+  document.querySelectorAll('[data-guide-try]').forEach(button => button.addEventListener('click', () => {
+    state.context = button.dataset.guideTry; state.previewSample = false; state.screen = 'trial'; state.index = 0; state.session = []; render();
+  }));
+  document.querySelectorAll('[data-guide-edit]').forEach(button => button.addEventListener('click', () => {
+    state.context = button.dataset.guideEdit; state.previewSample = false; state.screen = 'start'; render();
+  }));
   document.getElementById('support-option')?.addEventListener('input', event => {
     supportOptions[state.context] = event.target.value.slice(0, 160);
     saveSupportOptions();
