@@ -189,7 +189,6 @@ function renderStart() {
   return `<p class="step-label">A two-minute sensory experiment · 1 of 3</p>
     <h1>What would feel useful right now?</h1>
     <p class="lead">Choose a moment, then compare two versions of the sound. The forest and northern-lights scenes each have their own sound pair.</p>
-    ${renderAdaptiveSuggestion(getAdaptiveSuggestion())}
     <section class="signal-panel" aria-labelledby="signal-heading">
       <div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">YOUR CHOICE</span></div>
       <p class="signal-copy"><strong>${escapeHtml(demoSignals[state.signal].detail)}</strong><br>Choose an example, describe the moment in your own words, or skip the check-in. No phone or wearable sensors are read.</p>
@@ -230,7 +229,6 @@ function renderTrial() {
     <h1>Notice how this version feels.</h1>
     <p class="lead">Take a few seconds, or skip ahead whenever you like. There’s no right response.</p>
     ${renderSessionSupport()}
-    ${renderAdaptiveSuggestion(getAdaptiveSuggestion())}
     <div class="trial-card"><div class="trial-head"><div><p class="eyebrow">SOUND ${step}</p><h2>${variant.title}</h2><p>${variant.description}</p></div><span class="variant-pill">${step === 1 ? 'Version A' : 'Version B'}</span></div>
       <div class="sound-controls"><button class="play-button" id="play-button" type="button" aria-label="Play sound">${playing ? 'Ⅱ' : '▶'}</button><div class="sound-meta"><strong>${variant.title} ambience</strong><span>Generated in this browser · level is shared across both sounds</span></div><label class="trial-volume-control" for="trial-sound-level"><span>Level</span><select id="trial-sound-level"><option value="soft" ${state.soundLevel === 'soft' ? 'selected' : ''}>Very soft</option><option value="gentle" ${state.soundLevel === 'gentle' ? 'selected' : ''}>Gentle</option><option value="fuller" ${state.soundLevel === 'fuller' ? 'selected' : ''}>A little fuller</option></select></label><span class="sound-status" id="sound-status">${playing ? 'Playing' : 'Ready'}</span></div>
       <p class="feedback-label">How did it feel for you?</p><div class="feedback-grid">${feedback.map(f => `<button class="feedback-button" data-feedback="${f.id}" type="button"><span>${f.icon}</span>${f.label}</button>`).join('')}</div>
@@ -241,86 +239,6 @@ function availableVariants() {
   const ids = selectedScene === 'aurora' ? ['snow-hush', 'ice-chimes'] : ['wind', 'leaves'];
   return ids.map(id => getChoice(variants, id));
 }
-function getAdaptiveSuggestion() {
-  const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
-  const histories = new Map();
-  const sceneFor = id => ['snow-hush', 'ice-chimes'].includes(id) ? 'aurora' : 'forest';
-  // Only inspect the latest 100 notes; three recent ratings per sound are enough.
-  for (let i = notes.length - 1; i >= Math.max(0, notes.length - 100); i--) {
-    const note = notes[i];
-    if (!note.response || Date.parse(note.at) < cutoff) continue;
-    const key = sceneFor(note.variant) + ':' + note.variant;
-    const history = histories.get(key) || [];
-    if (history.length < 3) {
-      history.push(note);
-      histories.set(key, history);
-    }
-  }
-  const triggers = variants.map(variant => {
-    const scene = sceneFor(variant.id);
-    const history = histories.get(scene + ':' + variant.id) || [];
-    const dislikes = history.filter(note => note.response === 'worse').length;
-    return history[0]?.response === 'worse' && dislikes >= 2
-      ? { variant, scene, history, dislikes, at: Date.parse(history[0].at) }
-      : null;
-  }).filter(Boolean).sort((a, b) => b.at - a.at);
-  const trigger = triggers[0];
-  if (!trigger) return null;
-
-  let targetScene = 'aurora';
-  const inScene = scene => variants.filter(variant => sceneFor(variant.id) === scene && variant.id !== trigger.variant.id);
-  let candidates = inScene(targetScene);
-  const fresh = candidates.filter(variant => {
-    const history = histories.get(targetScene + ':' + variant.id) || [];
-    return !(history[0]?.response === 'worse' && history.filter(note => note.response === 'worse').length >= 2);
-  });
-  if (fresh.length) candidates = fresh;
-  else {
-    targetScene = 'forest';
-    candidates = inScene(targetScene);
-  }
-  const score = variant => {
-    const history = histories.get(targetScene + ':' + variant.id) || [];
-    return history.filter(note => note.response === 'better').length * 2 -
-      history.filter(note => note.response === 'worse').length * 3;
-  };
-  candidates.sort((a, b) => score(b) - score(a));
-  const next = candidates[0];
-  const latest = trigger.history[0];
-  return {
-    from: trigger.variant,
-    count: trigger.dislikes,
-    total: trigger.history.length,
-    context: latest.context || 'wind-down',
-    checkin: latest.checkin || null,
-    scene: targetScene,
-    variant: next.id
-  };
-}
-function renderAdaptiveSuggestion(suggestion) {
-  if (!suggestion) return '';
-  const source = getChoice(variants, suggestion.from);
-  const target = getChoice(variants, suggestion.variant);
-  const targetScene = suggestion.scene === 'aurora' ? 'northern lights' : 'forest';
-  return `<section class="adaptive-next-sound" aria-live="polite"><div><p class="eyebrow">YOUR RECENT SOUND FEEDBACK</p><strong>A different sound may suit you better</strong><p>You marked ${source.title.toLowerCase()} as “felt worse” on ${suggestion.count} of your last ${suggestion.total} rated tries. BLOOM now suggests ${target.title} in ${targetScene}, based on those sound ratings only.</p><small>This is a preference suggestion, not a mood or health assessment.</small></div><button class="secondary-button" id="adapted-sound-button" type="button">Try ${target.title}</button></section>`;
-}
-function startAdaptiveSound() {
-  const suggestion = getAdaptiveSuggestion();
-  if (!suggestion) return;
-  stopSound();
-  state.context = suggestion.context;
-  state.sessionSignal = suggestion.checkin;
-  state.previewSample = false;
-  state.suggestion = null;
-  state.firstVariant = suggestion.variant;
-  state.index = 0;
-  state.session = [];
-  state.view = 'patient';
-  setScene(suggestion.scene);
-  state.screen = 'trial';
-  render();
-}
-
 function sessionVariants() {
   const options = availableVariants();
   const first = options.find(v => v.id === state.firstVariant) || options[0];
@@ -598,7 +516,6 @@ function renderRecipe() {
   }[state.context];
   return `<p class="step-label">${state.previewSample ? 'Fictional example · sample history' : 'Your field note · saved on this device'}</p><h1>${hasSupportiveSignal ? 'A reset you can make your own.' : 'Nothing stood out as supportive yet.'}</h1>
     <p class="lead">${hasSupportiveSignal ? 'BLOOM keeps your response visible, so you can decide whether this recipe belongs in your field guide.' : 'That feedback is useful too. You don’t have to reuse something that didn’t feel supportive.'}</p>
-    ${renderAdaptiveSuggestion(getAdaptiveSuggestion())}
     <div class="recipe-card">${hasSupportiveSignal ? `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>${best.title} ${selectedScene === 'aurora' ? 'beneath the northern lights' : 'in the forest'}</h2></div><span class="recipe-count">${best.count} ${best.count === 1 ? 'try' : 'tries'}</span></div>
       <div class="recipe-detail"><span class="mini-icon">${best.icon}</span><div><strong>${best.title}</strong>${selectedScene === 'aurora' ? 'Northern-lights scene' : selectedScene === 'custom' ? 'Your chosen scene' : 'Forest scene'} · sound only</div></div>` : `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>No sound selected</h2></div></div>`}
       <div class="evidence"><strong>${state.previewSample ? 'What the sample notes say' : 'What your notes say'}</strong><br>${evidence}${state.previewSample ? '<br><span class="privacy-note">Fictional example only—not a real person’s history.</span>' : ''}</div>
@@ -713,7 +630,6 @@ function bindScreen() {
   document.getElementById('play-button')?.addEventListener('click', toggleSound);
   document.querySelectorAll('[data-feedback]').forEach(button => button.addEventListener('click', () => recordResponse(button.dataset.feedback)));
   document.getElementById('skip-trial')?.addEventListener('click', () => recordResponse(null));
-  document.getElementById('adapted-sound-button')?.addEventListener('click', startAdaptiveSound);
   document.getElementById('again-button')?.addEventListener('click', () => { state.previewSample = false; state.firstVariant = null; state.screen = 'trial'; state.index = 0; state.session = []; render(); });
   document.getElementById('edit-button')?.addEventListener('click', () => { state.previewSample = false; state.suggestion = null; state.sessionSignal = null; state.screen = 'start'; state.context = null; render(); });
   document.getElementById('new-session-button')?.addEventListener('click', () => { state.previewSample = false; state.suggestion = null; state.sessionSignal = null; state.screen = 'start'; render(); });
