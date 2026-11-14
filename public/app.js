@@ -97,11 +97,36 @@ function renderStart() {
       ${state.suggestion ? `<div class="suggestion-card"><p class="eyebrow">A STARTING POINT TO CONSIDER</p><p class="suggestion-edit-label">Moment</p><select id="suggestion-context" class="suggestion-select">${contexts.map(item => `<option value="${item.id}" ${item.id === state.suggestion.context ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p class="suggestion-edit-label">Sound to try first</p><select id="suggestion-variant" class="suggestion-select">${variants.map(item => `<option value="${item.id}" ${item.id === state.suggestion.variant ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p>${escapeHtml(state.suggestion.reason)}</p>${state.suggestion.variantEdited ? `<p class="edit-note">You changed the first sound to ${escapeHtml(getChoice(variants,state.suggestion.variant).title)}.</p>` : ''}<div class="suggestion-actions"><button class="primary-button" id="use-suggestion-button" type="button">Try this suggestion</button><button class="text-button" id="clear-suggestion-button" type="button">Clear suggestion</button></div></div>` : ''}
       <p class="privacy-note">Suggestions use transparent keyword rules and your saved ratings. They are exploratory, not a reading of your mental state or clinical recommendations.</p>
     </section>
+    ${renderLearningLedger()}
     <div class="start-links"><button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a fictional returning-user example <span aria-hidden="true">↗</span></button>${hasPersonalGuide() ? '<button class="secondary-button sample-button" id="personal-guide-button" type="button">Open my field guide <span aria-hidden="true">→</span></button>' : ''}</div>
     <div class="choice-grid">${contexts.map(c => `<button class="choice-card ${state.context === c.id ? 'selected' : ''}" data-context="${c.id}" type="button"><span class="choice-icon">${c.icon}</span><span><span class="choice-title">${c.title}</span><span class="choice-sub">${c.sub}</span></span></button>`).join('')}</div>
     ${state.context ? `<label class="support-option-field" for="support-option"><span class="support-option-title">Your own real-world cue <span>(optional)</span></span><textarea id="support-option" maxlength="160" placeholder="${state.context === 'wind-down' ? 'For example: settle somewhere comfortable' : state.context === 'reset' ? 'For example: notice your feet on the floor' : 'For example: look outside from where you are'}">${escapeHtml(supportOption)}</textarea><span class="privacy-note">Saved only on this device. You can change or remove it anytime.</span></label>` : ''}
     <div class="actions"><button class="primary-button" id="begin-button" type="button" ${state.context ? '' : 'disabled'}>Begin the experience <span aria-hidden="true">→</span></button><button class="text-button" id="skip-button" type="button">Not now</button></div>
     <p class="privacy-note">The example uses fictional responses and won’t be saved as your notes.</p>`;
+}
+function renderLearningLedger() {
+  const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+  const recent = notes.filter(note => !note.skipped && Date.parse(note.at) >= cutoff);
+  const signalEntries = recent.filter(note => note.checkin === state.signal);
+  const positive = signalEntries.filter(note => note.response === 'better').length;
+  const movementEntries = state.motionSignal
+    ? recent.filter(note => note.motionSignal === state.motionSignal && note.motionSource === state.motionSource)
+    : recent.filter(note => note.motionSignal);
+  const movementPositive = movementEntries.filter(note => note.response === 'better').length;
+  const signalLabel = demoSignals[state.signal]?.label || state.signal;
+  const evidenceText = signalEntries.length >= 3
+    ? `For “${escapeHtml(signalLabel)}”, ${positive} of ${signalEntries.length} rated sounds felt better in the last 14 days. BLOOM uses this as a preference clue, not a health measure.`
+    : signalEntries.length
+      ? `There ${signalEntries.length === 1 ? 'is' : 'are'} ${signalEntries.length} rated ${signalEntries.length === 1 ? 'sound' : 'sounds'} for “${escapeHtml(signalLabel)}” in the last 14 days. This is an early signal, not a reliable pattern yet.`
+      : `No rated sounds for “${escapeHtml(signalLabel)}” in the last 14 days yet. The first comparison will start a personal record.`;
+  const movementText = movementEntries.length
+    ? `${movementPositive} of ${movementEntries.length} rated sounds followed a ${state.motionSignal === 'moving' ? 'movement' : 'little-movement'} cue${state.motionSignal ? '' : ' (measured or preview sample)'}.`
+    : state.motionSignal
+      ? `No rated sounds match this ${state.motionSource === 'simulated' ? 'preview' : 'phone'} movement cue in the last 14 days yet.`
+      : 'Optional phone movement is only included when you choose to measure or preview it.';
+  return `<section class="learning-ledger" aria-labelledby="learning-ledger-title"><div class="learning-ledger-head"><div><p class="eyebrow">PRIVATE · LAST 14 DAYS</p><h2 id="learning-ledger-title">What BLOOM is learning from your choices</h2></div><span class="learning-count">${recent.length} ${recent.length === 1 ? 'rating' : 'ratings'}</span></div>
+    <div class="learning-columns"><article><span class="learning-signal-label">Your check-in</span><p>${evidenceText}</p></article><article><span class="learning-signal-label">Phone movement context</span><p>${movementText}</p></article></div>
+    <p class="privacy-note">Only rated sound experiences are counted. These are your reports, not a mood, stability, relapse, or treatment-effect measure. Notes stay in this browser.</p></section>`;
 }
 function renderTrial() {
   const variant = sessionVariants()[state.index];
