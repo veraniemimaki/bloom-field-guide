@@ -63,23 +63,26 @@ function renderTrial() {
 }
 function renderRecipe() {
   const ranked = rankVariants(state.context);
-  const best = ranked[0];
-  const other = ranked[1];
-  const evidence = best.count === 0
-    ? 'No notes yet. Try a short experience to start learning what you prefer.'
-    : best.count === 1
-    ? `You’ve tried ${best.title.toLowerCase()} once in this context. There isn’t a pattern yet.`
-    : `You chose ${best.title.toLowerCase()} as “felt better” ${best.positive} of ${best.count} times in this context.`;
+  const best = ranked.find(v => v.positive > 0) || ranked[0];
+  const other = ranked.find(v => v.id !== best.id);
+  const hasSupportiveSignal = ranked.some(v => v.positive > 0);
+  const evidence = hasSupportiveSignal
+    ? best.count === 1
+      ? `You’ve tried ${best.title.toLowerCase()} once in this context. There isn’t a pattern yet.`
+      : `You marked ${best.title.toLowerCase()} as “felt better” ${best.positive} of ${best.count} times in this context.`
+    : best.count === 0
+      ? 'No notes yet. Try a short experience to start learning what you prefer.'
+      : 'None of the saved responses in this context say that a sound felt better. BLOOM won’t choose a favorite without that signal.';
   const takeAlong = best.id === 'wind' ? 'If it suits you, pause and notice a breeze moving through nearby trees.' : 'If it suits you, notice the sound or movement of leaves nearby.';
-  return `<p class="step-label">${state.previewSample ? 'Fictional example · sample history' : 'Your field note · saved on this device'}</p><h1>A reset you can make your own.</h1>
-    <p class="lead">BLOOM keeps your response visible, so you can decide whether this recipe belongs in your field guide.</p>
-    <div class="recipe-card"><div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>${best.title} in the forest</h2></div><span class="recipe-count">${best.count} ${best.count === 1 ? 'try' : 'tries'}</span></div>
-      <div class="recipe-detail"><span class="mini-icon">${best.icon}</span><div><strong>${best.title}</strong><span>Forest scene · sound only</span></div></div>
+  return `<p class="step-label">${state.previewSample ? 'Fictional example · sample history' : 'Your field note · saved on this device'}</p><h1>${hasSupportiveSignal ? 'A reset you can make your own.' : 'Nothing stood out as supportive yet.'}</h1>
+    <p class="lead">${hasSupportiveSignal ? 'BLOOM keeps your response visible, so you can decide whether this recipe belongs in your field guide.' : 'That feedback is useful too. You don’t have to reuse something that didn’t feel supportive.'}</p>
+    <div class="recipe-card">${hasSupportiveSignal ? `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>${best.title} in the forest</h2></div><span class="recipe-count">${best.count} ${best.count === 1 ? 'try' : 'tries'}</span></div>
+      <div class="recipe-detail"><span class="mini-icon">${best.icon}</span><div><strong>${best.title}</strong><span>Forest scene · sound only</span></div></div>` : `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>No sound selected</h2></div></div>`}
       <div class="evidence"><strong>${state.previewSample ? 'What the sample notes say' : 'What your notes say'}</strong><br>${evidence}${state.previewSample ? '<br><span class="privacy-note">Fictional example only—not a real person’s history.</span>' : ''}</div>
-      <div class="real-world"><strong>A real-world version (you choose)</strong><p>${takeAlong}</p></div>
+      ${hasSupportiveSignal ? `<div class="real-world"><strong>A real-world version (you choose)</strong><p>${takeAlong}</p></div>` : ''}
       ${state.session.some(x => x.skipped) ? '<p class="privacy-note">Skipped versions weren’t counted as feedback.</p>' : ''}
-      <div class="actions"><button class="primary-button" id="again-button" type="button">Try this again</button><button class="secondary-button" id="edit-button" type="button">Change context</button></div>
-      <button class="quiet-link" id="new-session-button" type="button">Try the other sound next time: ${other.title.toLowerCase()}</button>
+      <div class="actions"><button class="primary-button" id="again-button" type="button">${hasSupportiveSignal ? 'Try this again' : 'Try these sounds again'}</button><button class="secondary-button" id="edit-button" type="button">Change context</button></div>
+      ${hasSupportiveSignal ? `<button class="quiet-link" id="new-session-button" type="button">Try the other sound next time: ${other.title.toLowerCase()}</button>` : ''}
     </div>`;
 }
 function rankVariants(contextId) {
