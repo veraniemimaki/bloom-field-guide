@@ -89,3 +89,8 @@ Aiven's Node.js connection guidance uses the `pg` package and its PostgreSQL gui
 ## Cloudinary scene images
 
 The optional scene-image control uses Cloudinary's Upload Widget for a user-selected landscape, then delivers a responsive crop with `c_fill,g_auto,w_1400,h_420,q_auto,f_auto`. The upload controls appear after `public/cloudinary-config.js` has a Cloudinary cloud name and an unsigned upload preset. Configure the preset to accept only JPG/PNG/WebP, use a dedicated `bloom-scenes` folder, and prevent overwrites. The cloud name and preset name are public identifiers; never put an API secret in frontend code. Upload only non-sensitive images you have permission to use; unsigned uploads create publicly deliverable assets. The existing CSS forest and aurora backdrops work without Cloudinary.
+
+
+## Winter sound profiles
+
+The northern-lights scene now offers two additional browser-generated sounds: **Snowfall hush** (soft, slowly wavering filtered noise) and **Distant ice chimes** (sparse, rounded synthesized tones). The forest keeps its wind and leaf pair. Ratings are saved with their scene and only inform later suggestions in that same scene, so northern-lights preferences do not get mixed with forest preferences. No audio service or API key is required.
