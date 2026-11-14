@@ -203,7 +203,25 @@ const server = http.createServer(async (req, res) => {
         }
         sendJson(res, 200, { imageDataUrl: "data:" + mimeType + ";base64," + imageData });
       } catch (error) {
-        console.error("Gemini image request failed.", { status: error?.status, name: error?.name });
+        // Log the provider's explanation, never its request/response objects.
+        let providerMessage = String(error?.message || "Unknown provider error");
+        try {
+          const parsed = JSON.parse(providerMessage);
+          providerMessage = String(parsed.error?.message || parsed.message || "Unknown provider error");
+        } catch { /* Some SDK errors contain plain text instead of JSON. */ }
+        for (const sensitive of [process.env.GEMINI_API_KEY, description, JSON.stringify(description).slice(1, -1)]) {
+          if (sensitive) providerMessage = providerMessage.split(sensitive).join("[redacted]");
+        }
+        providerMessage = providerMessage
+          .replace(/AIza[\w-]+/g, "[redacted-key]")
+          .replace(/data:image\/[^;]+;base64,[A-Za-z0-9+/=\s]+/g, "[redacted-image]")
+          .slice(0, 1500);
+        console.error("Gemini image request failed.", {
+          status: error?.status,
+          name: error?.name,
+          model: "gemini-3.1-flash-lite-image",
+          message: providerMessage
+        });
         const isRateLimit = error?.status === 429;
         const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError";
         sendJson(res, isRateLimit ? 429 : timedOut ? 504 : 502, {
@@ -211,7 +229,7 @@ const server = http.createServer(async (req, res) => {
             ? "Gemini is busy or the image limit was reached. Try again later."
             : timedOut
               ? "Image generation took too long. Please try again."
-              : "Gemini could not create this image. Try a shorter description."
+              : "Image generation is unavailable. Please try again later."
         });
       } finally {
         activeImageGenerations -= 1;
