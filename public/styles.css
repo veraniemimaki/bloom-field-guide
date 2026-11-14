@@ -166,3 +166,14 @@ body.aurora-theme .care-followup-pill{background:#49394a;color:#f1d7e9}
 body.aurora-theme .followup-composer textarea{background:#101d31;border-color:#405570;color:#eaf2fc}
 body.aurora-theme .personal-summary-details{background:#17243a;border-color:#3a4d66}
 @media(max-width:620px){.care-demo-banner,.care-person-card{align-items:flex-start;flex-direction:column}.care-metrics{grid-template-columns:1fr}.care-metric{display:grid;grid-template-columns:1fr auto}.care-metric small{grid-column:1/-1}.care-timeline-item{grid-template-columns:88px 1fr}.followup-actions{align-items:flex-start;flex-direction:column}}
+
+.motion-cue-panel{display:grid;grid-template-columns:1.15fr 1fr;gap:8px 16px;align-items:center;margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(135deg,#f8faf4,#eff5ed)}
+.motion-cue-panel strong{font:600 13px Manrope,sans-serif;color:var(--ink)}
+.motion-cue-panel p:not(.eyebrow):not(.motion-status){margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.5}
+.motion-actions{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.motion-actions .secondary-button{font-size:10px;padding:8px 10px}
+.motion-actions .text-button{font-size:9px}
+.motion-status{grid-column:1/-1;margin:0;color:var(--muted);font-size:10px}
+.motion-cue-panel button:disabled{opacity:.5}
+body.aurora-theme .motion-cue-panel{background:linear-gradient(135deg,#1b3044,#202b48);border-color:#3d536c}
+@media(max-width:620px){.motion-cue-panel{grid-template-columns:1fr}.motion-status{grid-column:auto}}
