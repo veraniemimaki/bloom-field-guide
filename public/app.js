@@ -2,6 +2,7 @@ const STORE_KEY = 'bloom-field-notes-v1';
 const SUPPORT_STORE_KEY = 'bloom-support-options-v1';
 const CLOUDINARY_SCENE_KEY = 'bloom-cloudinary-scene-v1';
 const cloudinaryConfig = window.BLOOM_CLOUDINARY || {};
+const COMMUNITY_API_BASE = 'https://bloom-api-g7bg.onrender.com';
 const contexts = [
   { id: 'wind-down', title: 'Wind down', sub: 'A softer end to the day', icon: '☾' },
   { id: 'reset', title: 'Take a small pause', sub: 'A moment to reset', icon: '✳' },
@@ -26,11 +27,7 @@ const sampleNotes = [
 
 let notes = loadNotes();
 let supportOptions = loadSupportOptions();
-let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, followUps: {}, communityTab: 'room', communityMessage: '', communityNotice: '', communityPosts: [
-  { id: 'peer-1', author: 'Member 18 · sample', text: 'I keep a soft nature sound low while I make tea.', status: 'published', sample: true },
-  { id: 'peer-2', author: 'Member 42 · sample', text: 'Looking out of my window for one minute is an easy pause.', status: 'published', sample: true },
-  { id: 'review-1', author: 'Member 07 · sample', text: 'You should stop your prescribed treatment if it makes you tired.', status: 'pending', sample: true, flag: 'Possible direct treatment advice', flagLevel: 'review' }
-] };
+let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, followUps: {}, communityTab: 'room', communityMessage: '', communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '' };
 const demoSignals = {
   restless: { label: 'Restless night', detail: 'A self-reported demo check-in: sleep felt unsettled.', context: 'wind-down', variant: 'wind', reason: 'A quieter wind-down moment may be worth trying after a restless night.' },
   overloaded: { label: 'Too much going on', detail: 'A self-reported demo check-in: the moment feels busy or overstimulating.', context: 'reset', variant: 'leaves', reason: 'A brief pause with a lighter leaf sound may be worth trying when things feel busy.' },
@@ -174,27 +171,118 @@ function classifyCommunityMessage(text) {
   return rules.find(rule => rule.pattern.test(text)) || null;
 }
 function renderCommunity() {
-  const published = state.communityPosts.filter(post => post.status === 'published');
-  const pending = state.communityPosts.filter(post => post.status === 'pending');
-  const decided = state.communityPosts.filter(post => post.humanDecision);
   const room = state.communityTab === 'room';
-  const visiblePosts = room ? published : pending;
-  const cards = visiblePosts.length
-    ? visiblePosts.map(post => `<article class="community-post"><div class="community-post-top"><span>${escapeHtml(post.author)}</span>${post.flag ? `<span class="flag-label">${escapeHtml(post.flag)} · mock flag</span>` : post.sample ? '<span class="demo-tag">FICTIONAL SAMPLE</span>' : '<span class="post-label">Peer note</span>'}</div><p>${escapeHtml(post.text)}</p>${!room && post.flag ? `<p class="flag-rationale">Held from the peer room until a human makes the final demo decision.</p>` : ''}</article>`).join('')
+  const posts = room ? state.communityPosts : state.reviewPosts;
+  const cards = posts.length
+    ? posts.map(post => {
+        const timestamp = post.submittedAt ? new Date(post.submittedAt).toLocaleString() : '';
+        const flag = post.flagReason ? `<p class="flag-rationale">${escapeHtml(post.flagReason)}</p>` : '';
+        return `<article class="community-post"><div class="community-post-top"><span>${escapeHtml(post.author || 'Community member')}</span><span class="${room ? 'post-label' : 'flag-label'}">${room ? 'HUMAN-APPROVED' : 'PENDING HUMAN REVIEW'}</span></div><p>${escapeHtml(post.text)}</p>${flag}${timestamp ? `<time class="community-time">${escapeHtml(timestamp)}</time>` : ''}</article>`;
+      }).join('')
     : room
-      ? '<div class="empty-note">No peer notes in this demo room yet.</div>'
-      : '<div class="empty-note">No comments are waiting for human review.</div>';
-  const reviewCards = room ? '' : decided.map(post => `<article class="community-post reviewed-post"><div class="community-post-top"><span>${escapeHtml(post.author)}</span><span class="review-decision">${post.humanDecision === 'approved' ? 'Human approved' : 'Human did not approve'}</span></div><p>${escapeHtml(post.text)}</p></article>`).join('');
-  return `<p class="step-label">Community concept · fictional local demo</p><h1>Small ideas, shared gently.</h1>
-    <p class="lead">A peer space for sharing sensory ideas that made home feel a little easier. This is a single-browser prototype: posts are not shared with other visitors.</p>
-    <div class="community-warning"><strong>Moderation preview only.</strong> Flagging uses demo keyword rules, not Gemini. No professional is alerted; the review screen is not access-controlled. Use fictional messages only.</div>
-    <div class="community-tabs"><button class="secondary-button ${room ? 'selected' : ''}" id="community-room-tab" type="button">Peer room</button><button class="secondary-button ${!room ? 'selected' : ''}" id="community-review-tab" type="button">Human review preview · ${pending.length}</button></div>
-    ${room ? `<section class="community-composer"><label for="community-message">Share a small sensory idea</label><textarea id="community-message" maxlength="280" placeholder="A sound, small ritual, or setting that you chose to try"></textarea><p class="privacy-note">Avoid names, treatment advice, or personal details. Your demo post stays in this page and clears when it reloads.</p><button class="primary-button" id="community-send-button" type="button">Post to demo room</button></section>` : `<div class="review-banner"><span class="demo-tag">MOCK AI FLAG</span><span>Flagged content stays hidden from the peer room until a human makes the final demo decision.</span></div>`}
-    <div class="community-list">${cards}${reviewCards}</div>
-    ${!room && pending.length ? `<div class="review-actions">${pending.map(post => `<div class="review-action-row"><span>Final decision for ${escapeHtml(post.author)}</span><button class="secondary-button" data-review="approve" data-post-id="${post.id}" type="button">Approve for demo room</button><button class="text-button" data-review="remove" data-post-id="${post.id}" type="button">Do not approve</button></div>`).join('')}</div>` : ''}
+      ? '<div class="empty-note">No approved peer notes yet. New submissions appear here only after a human reviewer approves them.</div>'
+      : '<div class="empty-note">No posts are waiting for review, or load the queue with a reviewer token.</div>';
+  return `<p class="step-label">Shared peer room · Aiven PostgreSQL</p><h1>Small ideas, shared gently.</h1>
+    <p class="lead">Share a small sensory idea with other BLOOM visitors. Posts stay hidden until a human reviewer approves them.</p>
+    <div class="community-warning"><strong>Shared demo space.</strong> Approved posts are visible to anyone visiting this site. Use a pseudonym and avoid names, contact details, treatment advice, or personal health information. Posts expire after 30 days. The queue is checked manually; no professional is notified automatically, and this is not crisis support.</div>
+    <div class="community-tabs"><button class="secondary-button ${room ? 'selected' : ''}" id="community-room-tab" type="button">Peer room · ${state.communityPosts.length}</button><button class="secondary-button ${!room ? 'selected' : ''}" id="community-review-tab" type="button">Human review · ${state.reviewPosts.length}</button></div>
+    ${room ? `<section class="community-composer"><label for="community-message">Share a small sensory idea</label><textarea id="community-message" maxlength="280" placeholder="A sound, small ritual, or setting you chose to try"></textarea><label class="community-consent"><input id="community-consent" type="checkbox" /> I understand this may become public after human approval and I will not include personal or medical details.</label><p class="privacy-note">Your post is stored in the shared database and held for human review. AI moderation is not connected yet, so every post is held.</p><button class="primary-button" id="community-send-button" type="button" ${state.communityLoading ? 'disabled' : ''}>Submit for review</button></section>` : `<section class="community-review-access"><label for="community-moderator-token">Reviewer access token</label><input id="community-moderator-token" type="password" autocomplete="off" value="${escapeHtml(state.moderatorToken)}" placeholder="Enter the token provided to the human reviewer" /><p class="privacy-note">The token stays in this page’s memory and is not saved. Do not use this reviewer screen on a shared device.</p><button class="secondary-button" id="community-load-review-button" type="button" ${state.communityLoading ? 'disabled' : ''}>Load review queue</button></section>`}
+    <div class="community-list">${cards}</div>
+    ${!room && state.reviewPosts.length ? `<div class="review-actions">${state.reviewPosts.map(post => `<div class="review-action-row"><span>Final decision for ${escapeHtml(post.author || 'community member')}</span><button class="secondary-button" data-review="approved" data-post-id="${post.id}" type="button">Approve for room</button><button class="text-button" data-review="rejected" data-post-id="${post.id}" type="button">Do not approve</button></div>`).join('')}</div>` : ''}
     ${state.communityNotice ? `<div class="community-notice" role="status">${escapeHtml(state.communityNotice)}</div>` : ''}
-    <p class="privacy-note">A real version needs shared secure storage, a protected reviewer account, Gemini moderation, trained human coverage, and a clear escalation plan. This prototype provides none of those.</p>`;
+    <p class="privacy-note">This demo has no member accounts or automatic professional alerts. Gemini moderation is not connected; all messages remain hidden until a human approves them.</p>`;
 }
+async function communityRequest(path, options = {}) {
+  const response = await fetch(`${COMMUNITY_API_BASE}${path}`, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'The community service could not complete that request.');
+  return data;
+}
+async function loadCommunityRoom() {
+  state.communityLoading = true;
+  state.communityNotice = 'Loading the shared room…';
+  render();
+  try {
+    const data = await communityRequest('/api/community/posts');
+    state.communityPosts = Array.isArray(data.posts) ? data.posts : [];
+    state.communityNotice = '';
+  } catch {
+    state.communityNotice = 'Could not load the shared room. Check your connection and try again.';
+  } finally {
+    state.communityLoading = false;
+    render();
+  }
+}
+async function loadCommunityReviewQueue() {
+  const token = String(state.moderatorToken || '').trim();
+  if (!token) {
+    state.communityNotice = 'Enter the reviewer token to open the protected queue.';
+    render();
+    return;
+  }
+  state.communityLoading = true;
+  state.communityNotice = 'Loading the protected review queue…';
+  render();
+  try {
+    const data = await communityRequest('/api/community/review-queue', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    state.reviewPosts = Array.isArray(data.posts) ? data.posts : [];
+    state.communityNotice = state.reviewPosts.length ? '' : 'The review queue is empty.';
+  } catch {
+    state.reviewPosts = [];
+    state.communityNotice = 'Could not open the protected queue. Check the reviewer token or try again.';
+  } finally {
+    state.communityLoading = false;
+    render();
+  }
+}
+async function submitCommunityPost() {
+  const text = String(document.getElementById('community-message')?.value || '').trim();
+  const consent = document.getElementById('community-consent')?.checked;
+  if (!text) { state.communityNotice = 'Write a short sensory idea first.'; render(); return; }
+  if (!consent) { state.communityNotice = 'Please confirm you understand the public-sharing rules before submitting.'; render(); return; }
+  state.communityLoading = true;
+  state.communityNotice = 'Submitting your post for human review…';
+  render();
+  try {
+    await communityRequest('/api/community/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    state.communityTab = 'room';
+    state.communityNotice = 'Your post was received and is hidden until a human reviewer approves it.';
+    await loadCommunityRoom();
+    state.communityNotice = 'Your post was received and is hidden until a human reviewer approves it.';
+  } catch {
+    state.communityNotice = 'Could not submit the post. Please try again.';
+  } finally {
+    state.communityLoading = false;
+    render();
+  }
+}
+async function decideCommunityPost(id, decision) {
+  const token = String(state.moderatorToken || '').trim();
+  state.communityLoading = true;
+  state.communityNotice = 'Saving the human review decision…';
+  render();
+  try {
+    await communityRequest(`/api/community/posts/${encodeURIComponent(id)}/decision`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ decision })
+    });
+    state.communityNotice = decision === 'approved' ? 'Post approved and now visible in the peer room.' : 'Post rejected and kept out of the peer room.';
+    await Promise.all([loadCommunityRoom(), loadCommunityReviewQueue()]);
+  } catch {
+    state.communityNotice = 'Could not save that review decision. Check the reviewer token and try again.';
+  } finally {
+    state.communityLoading = false;
+    render();
+  }
+}
+
 function renderClinician() {
   const entries = [...notes].reverse();
   const summaryRows = entries.length
@@ -299,32 +387,22 @@ function downloadCareSummary() {
   URL.revokeObjectURL(url);
 }
 function bindScreen() {
-  document.getElementById('community-view-button')?.addEventListener('click', () => { stopSound(); state.view = 'community'; state.screen = 'community'; render(); });
-  document.getElementById('community-room-tab')?.addEventListener('click', () => { state.communityTab = 'room'; state.communityNotice = ''; render(); });
-  document.getElementById('community-review-tab')?.addEventListener('click', () => { state.communityTab = 'review'; state.communityNotice = ''; render(); });
-  document.getElementById('community-send-button')?.addEventListener('click', () => {
-    const field = document.getElementById('community-message');
-    const text = String(field?.value || '').trim();
-    if (!text) { state.communityNotice = 'Write a short sensory idea first.'; render(); return; }
-    if (text.length > 280) { state.communityNotice = 'Keep the demo note under 280 characters.'; render(); return; }
-    const flag = classifyCommunityMessage(text);
-    const post = { id: `local-${Date.now()}`, author: 'You · demo', text, status: flag ? 'pending' : 'published', sample: false, flag: flag?.flag || null, flagLevel: flag?.flagLevel || null };
-    state.communityPosts.push(post);
-    state.communityTab = flag ? 'review' : 'room';
-    state.communityNotice = flag
-      ? `The simulated moderation check flagged this message: ${flag.flag}. It is hidden from the peer room while awaiting a human decision. No professional was notified by this demo.${flag.flagLevel === 'urgent' ? ' If you need immediate help, contact local emergency support or someone you trust.' : ''}`
-      : 'Your demo note is visible in this browser only; it was not shared with other people.';
-    render();
+  document.getElementById('community-view-button')?.addEventListener('click', () => {
+    stopSound(); state.view = 'community'; state.screen = 'community'; state.communityTab = 'room'; render(); loadCommunityRoom();
+  });
+  document.getElementById('community-room-tab')?.addEventListener('click', () => {
+    state.communityTab = 'room'; state.communityNotice = ''; render(); loadCommunityRoom();
+  });
+  document.getElementById('community-review-tab')?.addEventListener('click', () => {
+    state.communityTab = 'review'; state.communityNotice = ''; state.reviewPosts = []; render();
+  });
+  document.getElementById('community-send-button')?.addEventListener('click', submitCommunityPost);
+  document.getElementById('community-load-review-button')?.addEventListener('click', () => {
+    state.moderatorToken = String(document.getElementById('community-moderator-token')?.value || '');
+    loadCommunityReviewQueue();
   });
   document.querySelectorAll('[data-review]').forEach(button => button.addEventListener('click', () => {
-    const post = state.communityPosts.find(item => item.id === button.dataset.postId);
-    if (!post) return;
-    post.humanDecision = button.dataset.review === 'approve' ? 'approved' : 'not approved';
-    post.status = post.humanDecision === 'approved' ? 'published' : 'removed';
-    state.communityNotice = post.humanDecision === 'approved'
-      ? 'Human reviewer approved this sample for the local demo room.'
-      : 'Human reviewer did not approve this sample; it remains out of the demo room.';
-    render();
+    decideCommunityPost(button.dataset.postId, button.dataset.review);
   }));
   document.getElementById('patient-view-button')?.addEventListener('click', () => { state.view = 'patient'; state.screen = 'start'; render(); });
   document.getElementById('clinician-view-button')?.addEventListener('click', () => { stopSound(); state.view = 'clinician'; state.screen = 'clinician'; render(); });
