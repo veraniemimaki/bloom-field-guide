@@ -12,7 +12,8 @@
 2. Play **Soft wind** and choose how it felt.
 3. Play **Rustling leaves** and give a response.
 4. Review the suggested recipe and the notes behind it.
-5. From the start screen, choose **Preview a returning-user example** to see a separate, clearly labeled fictional history.
+5. After saving feedback, return to the start screen and choose **Open my field guide** to see your own notes and support cues on this device.
+6. Choose **Preview a fictional returning-user example** to see sample history kept separate from personal notes.
 
 The two soundscapes are synthesized in the browser. Allow audio playback when your browser asks.
 
@@ -45,7 +46,7 @@ Judges can use the live demo link above without GitHub repo access. The source r
 
 - Working demo flow: context → optional personal support cue → two sound variations → feedback → recipe.
 - A recipe only recommends a sound when at least one saved response says it felt better; skips, neutral responses, and negative responses do not create a false favorite.
-- Fictional returning-user example is kept separate from personal field notes.
+- Personal field guide summarizes the user's own notes by moment; the fictional returning-user example stays separate.
 - Sponsor services are not connected yet. Planned integrations are optional ElevenLabs narration, Gemini preference parsing, Cloudinary media delivery, and Aiven persistence. Gemma on Modal is a stretch goal.
 - The illustrated forest and procedural sounds are prototype assets.
 
