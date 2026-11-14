@@ -185,27 +185,44 @@ function render() {
   bindScreen();
 }
 function renderStart() {
-  const supportOption = state.context ? (supportOptions[state.context] || '') : '';
-  return `<p class="step-label">A two-minute sensory experiment · 1 of 3</p>
-    <h1>What would feel useful right now?</h1>
-    <p class="lead">Choose a moment, then compare two versions of the sound. The forest and northern-lights scenes each have their own sound pair.</p>
-    <section class="signal-panel" aria-labelledby="signal-heading">
-      <div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">YOUR CHOICE</span></div>
-      <p class="signal-copy"><strong>${escapeHtml(demoSignals[state.signal].detail)}</strong><br>Choose an example, describe the moment in your own words, or skip the check-in. No phone or wearable sensors are read.</p>
-      <div class="signal-options">${Object.entries(demoSignals).map(([id, item]) => `<button class="signal-option ${state.signal === id ? 'selected' : ''}" data-signal="${id}" type="button" aria-pressed="${state.signal === id}">${item.label}</button>`).join('')}</div>
-      <label class="moment-field" for="moment-description"><span>Or describe what feels noticeable <span>(optional)</span></span><textarea id="moment-description" maxlength="160" placeholder="For example: indoors, tired, and wanting something steady">${escapeHtml(state.momentDescription)}</textarea><small>Your description stays in this browser and is used only for an optional, explainable suggestion. It is not sent to an AI service or saved. Avoid names or medical details.</small></label>
-      <button class="secondary-button" id="suggest-button" type="button">Shape a sensory experiment</button>
-      ${state.suggestion ? `<div class="suggestion-card"><p class="eyebrow">A STARTING POINT TO CONSIDER</p><p class="suggestion-edit-label">Moment</p><select id="suggestion-context" class="suggestion-select">${contexts.map(item => `<option value="${item.id}" ${item.id === state.suggestion.context ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p class="suggestion-edit-label">Sound to try first</p><select id="suggestion-variant" class="suggestion-select">${availableVariants().map(item => `<option value="${item.id}" ${item.id === state.suggestion.variant ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p>${escapeHtml(state.suggestion.reason)}</p>${state.suggestion.variantEdited ? `<p class="edit-note">You changed the first sound to ${escapeHtml(getChoice(variants,state.suggestion.variant).title)}.</p>` : ''}<div class="suggestion-actions"><button class="primary-button" id="use-suggestion-button" type="button">Try this suggestion</button><button class="text-button" id="clear-suggestion-button" type="button">Clear suggestion</button></div></div>` : ''}
-      <p class="privacy-note">Suggestions use transparent keyword rules and your saved ratings. They are exploratory, not a reading of your mental state or clinical recommendations.</p>
-    </section>
-    ${renderLearningLedger()}
-    ${renderReminderCard()}
-    ${renderCareCheckInRequest()}
-    <div class="start-links"><button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a fictional returning-user example <span aria-hidden="true">↗</span></button>${hasPersonalGuide() ? '<button class="secondary-button sample-button" id="personal-guide-button" type="button">Open my field guide <span aria-hidden="true">→</span></button>' : ''}</div>
-    <div class="choice-grid">${contexts.map(c => `<button class="choice-card ${state.context === c.id ? 'selected' : ''}" data-context="${c.id}" type="button"><span class="choice-icon">${c.icon}</span><span><span class="choice-title">${c.title}</span><span class="choice-sub">${c.sub}</span></span></button>`).join('')}</div>
-    ${state.context ? `<label class="support-option-field" for="support-option"><span class="support-option-title">Your own real-world cue <span>(optional)</span></span><textarea id="support-option" maxlength="160" placeholder="${state.context === 'wind-down' ? 'For example: settle somewhere comfortable' : state.context === 'reset' ? 'For example: notice your feet on the floor' : 'For example: look outside from where you are'}">${escapeHtml(supportOption)}</textarea><span class="privacy-note">Saved only on this device. You can change or remove it anytime.</span></label>` : ''}
-    <div class="actions"><button class="primary-button" id="begin-button" type="button" ${state.context ? '' : 'disabled'}>Begin the experience <span aria-hidden="true">→</span></button><button class="text-button" id="skip-button" type="button">Not now</button></div>
-    <p class="privacy-note">The example uses fictional responses and won’t be saved as your notes.</p>`;
+  const defaultContext = state.context || demoSignals[state.signal]?.context || contexts[0].id;
+  const contextTitle = getChoice(contexts, defaultContext).title;
+  const supportOption = supportOptions[defaultContext] || '';
+  const signalOptions = Object.entries(demoSignals).map(([id, item]) =>
+    '<button class="signal-option ' + (state.signal === id ? 'selected' : '') + '" data-signal="' + id + '" type="button" aria-pressed="' + String(state.signal === id) + '">' + escapeHtml(item.label) + '</button>'
+  ).join('');
+  const contextOptions = contexts.map(c =>
+    '<button class="choice-card ' + (defaultContext === c.id ? 'selected' : '') + '" data-context="' + c.id + '" type="button"><span class="choice-icon">' + c.icon + '</span><span><span class="choice-title">' + c.title + '</span><span class="choice-sub">' + c.sub + '</span></span></button>'
+  ).join('');
+  const suggestionMarkup = state.suggestion
+    ? '<div class="suggestion-card"><p class="eyebrow">A STARTING POINT TO CONSIDER</p><p class="suggestion-edit-label">Moment</p><select id="suggestion-context" class="suggestion-select">' +
+      contexts.map(item => '<option value="' + item.id + '"' + (item.id === state.suggestion.context ? ' selected' : '') + '>' + item.title + '</option>').join('') +
+      '</select><p class="suggestion-edit-label">Sound to try first</p><select id="suggestion-variant" class="suggestion-select">' +
+      availableVariants().map(item => '<option value="' + item.id + '"' + (item.id === state.suggestion.variant ? ' selected' : '') + '>' + item.title + '</option>').join('') +
+      '</select><p>' + escapeHtml(state.suggestion.reason) + '</p>' +
+      (state.suggestion.variantEdited ? '<p class="edit-note">You changed the first sound to ' + escapeHtml(getChoice(variants, state.suggestion.variant).title) + '.</p>' : '') +
+      '<div class="suggestion-actions"><button class="primary-button" id="use-suggestion-button" type="button">Try this suggestion</button><button class="text-button" id="clear-suggestion-button" type="button">Clear suggestion</button></div></div>'
+    : '';
+  return '<p class="step-label">A two-minute sensory experience</p>' +
+    '<h1>Start with two short sounds.</h1>' +
+    '<p class="lead">Start a simple comparison in ' + escapeHtml(contextTitle) + '. Forest and Northern lights each have their own sound pair. Check-ins, descriptions, and other options can wait until you want them.</p>' +
+    '<div class="actions start-primary-action"><button class="primary-button" id="begin-button" type="button">Start the sound comparison <span aria-hidden="true">→</span></button></div>' +
+    '<details class="start-personalize"><summary>Personalize this moment (optional)</summary><div class="start-personalize-content">' +
+      '<section class="signal-panel" aria-labelledby="signal-heading">' +
+        '<div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">YOUR CHOICE</span></div>' +
+        '<p class="signal-copy"><strong>' + escapeHtml(demoSignals[state.signal].detail) + '</strong><br>Choose an example, describe the moment in your own words, or skip the check-in. No phone or wearable sensors are read.</p>' +
+        '<div class="signal-options">' + signalOptions + '</div>' +
+        '<label class="moment-field" for="moment-description"><span>Or describe what feels noticeable <span>(optional)</span></span><textarea id="moment-description" maxlength="160" placeholder="For example: indoors, tired, and wanting something steady">' + escapeHtml(state.momentDescription) + '</textarea><small>Your description stays in this browser and is used only for an optional, explainable suggestion. It is not sent to an AI service or saved. Avoid names or medical details.</small></label>' +
+        '<button class="secondary-button" id="suggest-button" type="button">Shape a sensory experiment</button>' + suggestionMarkup +
+        '<p class="privacy-note">Suggestions use transparent keyword rules and your saved ratings. They are exploratory, not a reading of your mental state or clinical recommendations.</p>' +
+      '</section>' +
+      '<div class="choice-grid">' + contextOptions + '</div>' +
+      '<label class="support-option-field" for="support-option"><span class="support-option-title">Your own real-world cue <span>(optional)</span></span><textarea id="support-option" maxlength="160" placeholder="For example: settle somewhere comfortable">' + escapeHtml(supportOption) + '</textarea><span class="privacy-note">Saved only on this device. You can change or remove it anytime.</span></label>' +
+      renderLearningLedger() + renderReminderCard() + renderCareCheckInRequest() +
+      '<div class="start-links"><button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a fictional returning-user example <span aria-hidden="true">↗</span></button>' +
+      (hasPersonalGuide() ? '<button class="secondary-button sample-button" id="personal-guide-button" type="button">Open my field guide <span aria-hidden="true">→</span></button>' : '') +
+      '</div><p class="privacy-note">The example uses fictional responses and won’t be saved as your notes.</p>' +
+    '</div></details>';
 }
 function renderLearningLedger() {
   const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
@@ -502,6 +519,16 @@ function renderRecipe() {
   const other = ranked.find(v => v.id !== best.id);
   const hasSupportiveSignal = ranked.some(v => v.positive > 0);
   const supportOption = !state.previewSample ? (supportOptions[state.context] || '').trim() : '';
+  const sessionHasRatings = state.session.some(item => !item.skipped && item.response);
+  const hasExistingContextRatings = notes.some(note => note.context === state.context && (note.scene || 'forest') === selectedScene && !note.skipped && note.response);
+  const skippedSessionLabel = hasExistingContextRatings
+    ? 'No new ratings saved—here’s your existing field guide.'
+    : 'No new ratings saved—your field guide is just getting started.';
+  const recipeLabel = state.previewSample
+    ? 'Fictional example · sample history'
+    : state.session.length && !sessionHasRatings
+      ? skippedSessionLabel
+      : 'Your field note · saved on this device';
   const evidence = hasSupportiveSignal
     ? best.count === 1
       ? `You’ve tried ${best.title.toLowerCase()} once in this context. There isn’t a pattern yet.`
@@ -514,7 +541,7 @@ function renderRecipe() {
     reset: 'If it suits you, pause and notice your feet on the floor.',
     outside: 'If it suits you, look outside from where you are; stepping out is optional.'
   }[state.context];
-  return `<p class="step-label">${state.previewSample ? 'Fictional example · sample history' : 'Your field note · saved on this device'}</p><h1>${hasSupportiveSignal ? 'A reset you can make your own.' : 'Nothing stood out as supportive yet.'}</h1>
+  return `<p class="step-label">${escapeHtml(recipeLabel)}</p><h1>${hasSupportiveSignal ? 'A reset you can make your own.' : 'Nothing stood out as supportive yet.'}</h1>
     <p class="lead">${hasSupportiveSignal ? 'BLOOM keeps your response visible, so you can decide whether this recipe belongs in your field guide.' : 'That feedback is useful too. You don’t have to reuse something that didn’t feel supportive.'}</p>
     <div class="recipe-card">${hasSupportiveSignal ? `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>${best.title} ${selectedScene === 'aurora' ? 'beneath the northern lights' : 'in the forest'}</h2></div><span class="recipe-count">${best.count} ${best.count === 1 ? 'try' : 'tries'}</span></div>
       <div class="recipe-detail"><span class="mini-icon">${best.icon}</span><div><strong>${best.title}</strong>${selectedScene === 'aurora' ? 'Northern-lights scene' : selectedScene === 'custom' ? 'Your chosen scene' : 'Forest scene'} · sound only</div></div>` : `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>No sound selected</h2></div></div>`}
