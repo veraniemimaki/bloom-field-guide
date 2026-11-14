@@ -62,3 +62,9 @@ The `api/` service is a small Node HTTP API with:
 - `POST /api/preferences/interpret` for a mock, keyword-based context suggestion.
 
 The browser app currently uses its own local rule-based interpreter and does not call this endpoint or an AI model. The mock endpoint stores no submitted text. Provider keys belong in Render environment variables, never in browser code or Git.
+
+## Community moderation concept
+
+The Community tab is an interactive, single-browser prototype. It includes fictional peer notes, a mock rule-based moderation check, and a simulated human-review queue. Flagged posts stay hidden from the demo room until a reviewer approves or removes them in the UI.
+
+This is not a live chat: posts are not shared between visitors, Gemini is not connected, the review screen is not protected, and no professional is alerted. Use fictional messages only. A real release needs shared storage, authenticated reviewer access, Gemini moderation, staffed human review, and a reviewed escalation process.
