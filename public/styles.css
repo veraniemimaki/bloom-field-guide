@@ -208,3 +208,13 @@ body.aurora-theme .care-request-summary{background:#25283e;color:#e8e9f8}
 body.aurora-theme .gentle-support-note{background:#2c293b;border-color:#51465c}
 body.aurora-theme .support-dialog a{color:#b8d8ef}
 @media(max-width:620px){.reminder-heading{flex-direction:column}.reminder-fields{grid-template-columns:1fr 1fr}.care-request-card{align-items:flex-start;flex-direction:column}}
+
+
+/* Small inline adaptation prompt; keep existing controls and layout intact */
+.adaptive-next-sound{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:14px 0;padding:13px 16px;border:1px solid #d9c9b4;border-left:3px solid #b58152;border-radius:13px;background:#fbf7ef}
+.adaptive-next-sound strong{display:block;margin:2px 0 5px;font:600 15px Manrope,sans-serif;color:var(--ink)}
+.adaptive-next-sound p{max-width:620px;margin:0;color:var(--ink);font-size:11px;line-height:1.5}
+.adaptive-next-sound small{display:block;margin-top:5px;color:var(--muted);font-size:10px}
+.adaptive-next-sound button{flex:none}
+body.aurora-theme .adaptive-next-sound{background:#20283c;border-color:#4b5368;color:#eef2fa}
+@media(max-width:620px){.adaptive-next-sound{align-items:flex-start;flex-direction:column}.adaptive-next-sound button{width:100%}}
