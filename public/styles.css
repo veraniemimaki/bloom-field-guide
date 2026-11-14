@@ -210,3 +210,5 @@ body.aurora-theme .support-dialog a{color:#b8d8ef}
 @media(max-width:620px){.reminder-heading{flex-direction:column}.reminder-fields{grid-template-columns:1fr 1fr}.care-request-card{align-items:flex-start;flex-direction:column}}
 
 
+
+.start-primary-action{margin:8px 0 14px}.start-personalize{margin:18px 0;border:1px solid var(--line);border-radius:15px;background:#ffffff8c}.start-personalize>summary{padding:15px 17px;cursor:pointer;font-size:13px;font-weight:700;color:var(--leaf-dark);list-style-position:inside}.start-personalize[open]>summary{border-bottom:1px solid var(--line)}.start-personalize-content{display:grid;gap:16px;padding:16px}.start-personalize-content>.signal-panel,.start-personalize-content>.learning-ledger,.start-personalize-content>.reminder-card,.start-personalize-content>.care-request-card{margin:0}.start-personalize-content>.choice-grid{margin-top:2px}.start-personalize-content>.support-option-field{margin:0}.start-personalize-content>.start-links{margin-top:2px}
