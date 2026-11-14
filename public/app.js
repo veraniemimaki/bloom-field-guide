@@ -91,7 +91,7 @@ function renderStart() {
       <div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">YOUR CHOICE</span></div>
       <p class="signal-copy"><strong>${escapeHtml(demoSignals[state.signal].detail)}</strong><br>Choose an example, describe the moment in your own words, or skip the check-in. No phone or wearable sensors are read.</p>
       <div class="signal-options">${Object.entries(demoSignals).map(([id, item]) => `<button class="signal-option ${state.signal === id ? 'selected' : ''}" data-signal="${id}" type="button" aria-pressed="${state.signal === id}">${item.label}</button>`).join('')}</div>
-      <section class="motion-cue-panel" aria-label="Optional phone movement context"><div><p class="eyebrow">OPTIONAL · PHONE MOVEMENT</p><strong>Use a short movement sample as context</strong><p>It can only describe device movement. It cannot tell how you feel. Readings stay in this page and aren’t saved or sent.</p></div><div class="motion-actions"><button class="secondary-button" id="motion-sample-button" type="button">Measure this phone for 6 seconds</button><button class="text-button" data-motion-demo="still" type="button">Preview sample: still</button><button class="text-button" data-motion-demo="moving" type="button">Preview sample: moving</button></div><p class="motion-status" id="motion-status" role="status">${escapeHtml(state.motionStatus)}${state.motionSignal ? ` · ${state.motionSource === 'simulated' ? 'simulated' : 'measured'} cue: ${state.motionSignal === 'moving' ? 'movement detected' : 'little movement detected'}` : ''}</p></section>
+      <section class="motion-cue-panel" aria-label="Optional phone movement context"><div><p class="eyebrow">OPTIONAL · PHONE MOVEMENT</p><strong>Use a short movement sample as context</strong><p>It can only describe device movement. It cannot tell how you feel. Raw samples are discarded. If you rate a session, the still/moving category is saved with that feedback in this browser only; nothing is uploaded.</p></div><div class="motion-actions"><button class="secondary-button" id="motion-sample-button" type="button">Measure this phone for 6 seconds</button><button class="text-button" data-motion-demo="still" type="button">Preview sample: still</button><button class="text-button" data-motion-demo="moving" type="button">Preview sample: moving</button>${state.motionSignal ? '<button class="text-button" id="motion-clear-button" type="button">Clear movement cue</button>' : ''} </div><p class="motion-status" id="motion-status" role="status">${escapeHtml(state.motionStatus)}${state.motionSignal ? ` · ${state.motionSource === 'simulated' ? 'simulated' : 'measured'} cue: ${state.motionSignal === 'moving' ? 'movement detected' : 'little movement detected'}` : ''}</p></section>
       <label class="moment-field" for="moment-description"><span>Or describe what feels noticeable <span>(optional)</span></span><textarea id="moment-description" maxlength="160" placeholder="For example: indoors, tired, and wanting something steady">${escapeHtml(state.momentDescription)}</textarea><small>Read locally in this page only; not saved or sent. Avoid names or medical details.</small></label>
       <button class="secondary-button" id="suggest-button" type="button">Shape a sensory experiment</button>
       ${state.suggestion ? `<div class="suggestion-card"><p class="eyebrow">A STARTING POINT TO CONSIDER</p><p class="suggestion-edit-label">Moment</p><select id="suggestion-context" class="suggestion-select">${contexts.map(item => `<option value="${item.id}" ${item.id === state.suggestion.context ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p class="suggestion-edit-label">Sound to try first</p><select id="suggestion-variant" class="suggestion-select">${variants.map(item => `<option value="${item.id}" ${item.id === state.suggestion.variant ? 'selected' : ''}>${item.title}</option>`).join('')}</select><p>${escapeHtml(state.suggestion.reason)}</p>${state.suggestion.variantEdited ? `<p class="edit-note">You changed the first sound to ${escapeHtml(getChoice(variants,state.suggestion.variant).title)}.</p>` : ''}<div class="suggestion-actions"><button class="primary-button" id="use-suggestion-button" type="button">Try this suggestion</button><button class="text-button" id="clear-suggestion-button" type="button">Clear suggestion</button></div></div>` : ''}
@@ -129,8 +129,8 @@ function interpretMoment(text) {
 }
 function setMotionCue(signal, source) {
   state.motionSignal = signal;
-  state.motionSource = source;
-  state.motionStatus = source === 'simulated' ? 'Preview sample selected. This is not a live sensor reading.' : 'Phone movement sample completed. Raw readings were discarded.';
+  state.motionSource = signal ? source : null;
+  state.motionStatus = !signal ? 'Movement cue cleared.' : source === 'simulated' ? 'Preview sample selected. This is not a live sensor reading.' : 'Phone movement sample completed. Raw readings were discarded.';
   render();
 }
 async function capturePhoneMovement() {
@@ -194,7 +194,7 @@ function buildSuggestion(signalId, contextId = demoSignals[signalId].context, mo
   const context = getChoice(contexts, contextId);
   const taggedRank = momentMatch ? rankForCheckin(contextId, momentMatch.tag) : [];
   const taggedPreference = taggedRank.find(variant => variant.positive > 0);
-  const movementEntries = state.motionSignal ? notes.filter(note => note.context === contextId && note.motionSignal === state.motionSignal) : [];
+  const movementEntries = state.motionSignal ? notes.filter(note => note.context === contextId && note.motionSignal === state.motionSignal && note.motionSource === state.motionSource) : [];
   const movementRank = variants.map(variant => { const matches = movementEntries.filter(note => note.variant === variant.id); return { ...variant, count: matches.length, positive: matches.filter(note => note.response === 'better').length }; }).sort((a,b) => b.positive-a.positive || b.count-a.count);
   const movementPreference = movementRank.find(variant => variant.positive > 0);
   const contextPreference = rankVariants(contextId).find(variant => variant.positive > 0);
@@ -519,6 +519,7 @@ function bindScreen() {
   document.getElementById('trial-sound-level')?.addEventListener('change', event => { state.soundLevel = event.target.value; stopSound(); render(); });
   document.querySelectorAll('[data-motion-demo]').forEach(button => button.addEventListener('click', () => setMotionCue(button.dataset.motionDemo, 'simulated')));
   document.getElementById('motion-sample-button')?.addEventListener('click', capturePhoneMovement);
+  document.getElementById('motion-clear-button')?.addEventListener('click', () => setMotionCue(null, null));
   document.getElementById('moment-description')?.addEventListener('input', event => { state.momentDescription = event.target.value.slice(0, 160); });
   document.getElementById('suggest-button')?.addEventListener('click', () => {
     const description = document.getElementById('moment-description')?.value || state.momentDescription;
