@@ -8,20 +8,20 @@
 
 ### Two-minute judge walkthrough
 
-1. Choose a moment, such as **Take a small pause**, then select **Begin the experience**.
-2. Play **Soft wind** and choose how it felt.
-3. Play **Rustling leaves** and give a response.
-4. Review the suggested recipe and the notes behind it.
-5. After saving feedback, return to the start screen and choose **Open my field guide** to see your own notes and support cues on this device.
+1. In **Patient**, choose a self-reported example or describe the moment, such as “indoors, tired, and wanting something steady.”
+2. Select **Shape a sensory experiment**. BLOOM uses local keyword rules and your saved ratings to suggest a moment and sound; inspect the explanation and edit either choice.
+3. Start the experiment. Set the sound level once for both sounds, play each browser-generated variation, and rate how each felt.
+4. Return to the start screen and repeat a similar check-in. The suggestion can now use ratings saved from the earlier check-in.
+5. Open **My field guide** for personal notes or **Care summary** to review and download a summary you decide whether to share.
 6. Choose **Preview a fictional returning-user example** to see sample history kept separate from personal notes.
 
-The two soundscapes are synthesized in the browser. Allow audio playback when your browser asks.
+Free-text descriptions are read in the browser only, then discarded. They are not saved or sent. BLOOM saves the selected check-in category and sound feedback in local storage on that device. The two soundscapes are synthesized in the browser. Allow audio playback when your browser asks.
 
 ## What BLOOM does
 
-BLOOM is a prototype sensory field guide for people returning home after TMS. It lets someone compare short variations of a nature-inspired scene, record how each felt, and keep a recipe they can replay or edit.
+BLOOM is a prototype sensory field guide for people returning home after TMS. It lets someone describe or choose a moment, shape a short nature-inspired sound experiment, record how each variation felt, and build a personal guide from those responses. The care summary is generated from the user's own saved notes and is only downloaded when they choose.
 
-This is an early demo, not a medical device or treatment. It does not measure brain activity, diagnose depression, detect relapse, or replace clinical care.
+This is an early demo, not a medical device or treatment. It does not measure brain activity, diagnose depression, detect relapse, or replace clinical care. Its suggestion logic is a small, explainable keyword rule—not an AI model or a reading of someone's mental state.
 
 ## Run locally
 
@@ -30,9 +30,9 @@ The current version is a static browser app with no build step or API keys requi
 1. Open a terminal in the project folder.
 2. Run `python3 -m http.server --directory public 8000`.
 3. Open <http://localhost:8000>.
-4. Choose a context and try both sound variations, or preview the fictional returning-user example.
+4. Try a self-reported check-in, describe the moment, and compare both sound variations.
 
-Field notes and optional support cues are stored only in the browser and device where they were entered, using local storage.
+Field notes, check-in categories, and optional real-world cues stay in local storage on the browser and device where they were entered. Free-text descriptions are not saved.
 
 ## Recreate on Render
 
@@ -44,15 +44,16 @@ Judges can use the live demo link above without GitHub repo access. The source r
 
 ## Current status
 
-- Working demo flow: context → optional personal support cue → two sound variations → feedback → recipe.
-- A recipe only recommends a sound when at least one saved response says it felt better; skips, neutral responses, and negative responses do not create a false favorite.
-- Personal field guide summarizes the user's own notes by moment; the fictional returning-user example stays separate.
+- Demo flow: self-reported check-in or optional description → local, explainable suggestion informed by saved feedback → two generated sound variations with a shared intensity setting → user rating → personal sensory field guide.
+- Saved ratings can personalize a future suggestion for the same check-in category or moment.
+- Care summary reviews only the current user's local notes and downloads a text file only after the user chooses.
+- Check-in descriptions are never saved or sent; only the matched category and ratings are stored in this browser.
 - Sponsor services are not connected yet. Planned integrations are optional ElevenLabs narration, Gemini preference parsing, Cloudinary media delivery, and Aiven persistence. Gemma on Modal is a stretch goal.
 - The illustrated forest and procedural sounds are prototype assets.
 
 ## Development notes
 
-Do not commit API keys, database passwords, certificates, or real health information. When integrations are added, secrets belong in server-side environment variables. Keep demo data fictional unless you have an approved research process and participant consent.
+Do not commit API keys, database passwords, certificates, or real health information. If integrations are added, secrets belong in server-side environment variables. Keep demo data fictional unless you have an approved research process and participant consent.
 
 ## Server-side API foundation
 
@@ -60,5 +61,4 @@ The `api/` service is a small Node HTTP API with:
 - `GET /api/health` for Render health checks.
 - `POST /api/preferences/interpret` for a mock, keyword-based context suggestion.
 
-The mock endpoint stores no submitted text and does not use an AI model. The current browser app does not call it yet. Do not send real or identifying health information in this prototype. Provider keys belong in Render environment variables, never in browser code or Git.
-
+The browser app currently uses its own local rule-based interpreter and does not call this endpoint or an AI model. The mock endpoint stores no submitted text. Provider keys belong in Render environment variables, never in browser code or Git.
