@@ -27,7 +27,7 @@ const sampleNotes = [
 
 let notes = loadNotes();
 let supportOptions = loadSupportOptions();
-let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, followUps: {}, communityTab: 'room', communityMessage: '', communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '' };
+let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, followUps: {}, communityTab: 'room', communityMessage: '', communityConsent: false, communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '' };
 const demoSignals = {
   restless: { label: 'Restless night', detail: 'A self-reported demo check-in: sleep felt unsettled.', context: 'wind-down', variant: 'wind', reason: 'A quieter wind-down moment may be worth trying after a restless night.' },
   overloaded: { label: 'Too much going on', detail: 'A self-reported demo check-in: the moment feels busy or overstimulating.', context: 'reset', variant: 'leaves', reason: 'A brief pause with a lighter leaf sound may be worth trying when things feel busy.' },
@@ -186,7 +186,7 @@ function renderCommunity() {
     <p class="lead">Share a small sensory idea with other BLOOM visitors. Posts stay hidden until a human reviewer approves them.</p>
     <div class="community-warning"><strong>Shared demo space.</strong> Approved posts are visible to anyone visiting this site. Use a pseudonym and avoid names, contact details, treatment advice, or personal health information. Posts expire after 30 days. The queue is checked manually; no professional is notified automatically, and this is not crisis support.</div>
     <div class="community-tabs"><button class="secondary-button ${room ? 'selected' : ''}" id="community-room-tab" type="button">Peer room · ${state.communityPosts.length}</button><button class="secondary-button ${!room ? 'selected' : ''}" id="community-review-tab" type="button">Human review · ${state.reviewPosts.length}</button></div>
-    ${room ? `<section class="community-composer"><label for="community-message">Share a small sensory idea</label><textarea id="community-message" maxlength="280" placeholder="A sound, small ritual, or setting you chose to try"></textarea><label class="community-consent"><input id="community-consent" type="checkbox" /> I understand this may become public after human approval and I will not include personal or medical details.</label><p class="privacy-note">Your post is stored in the shared database and held for human review. AI moderation is not connected yet, so every post is held.</p><button class="primary-button" id="community-send-button" type="button" ${state.communityLoading ? 'disabled' : ''}>Submit for review</button></section>` : `<section class="community-review-access"><label for="community-moderator-token">Reviewer access token</label><input id="community-moderator-token" type="password" autocomplete="off" value="${escapeHtml(state.moderatorToken)}" placeholder="Enter the token provided to the human reviewer" /><p class="privacy-note">The token stays in this page’s memory and is not saved. Do not use this reviewer screen on a shared device.</p><button class="secondary-button" id="community-load-review-button" type="button" ${state.communityLoading ? 'disabled' : ''}>Load review queue</button></section>`}
+    ${room ? `<section class="community-composer"><label for="community-message">Share a small sensory idea</label><textarea id="community-message" maxlength="280" placeholder="A sound, small ritual, or setting you chose to try">${escapeHtml(state.communityMessage)}</textarea><label class="community-consent"><input id="community-consent" type="checkbox" ${state.communityConsent ? 'checked' : ''} /> I understand this may become public after human approval and I will not include personal or medical details.</label><p class="privacy-note">Your post is stored in the shared database and held for human review. AI moderation is not connected yet, so every post is held.</p><button class="primary-button" id="community-send-button" type="button" ${state.communityLoading || !state.communityConsent ? 'disabled' : ''}>Submit for review</button></section>` : `<section class="community-review-access"><label for="community-moderator-token">Reviewer access token</label><input id="community-moderator-token" type="password" autocomplete="off" value="${escapeHtml(state.moderatorToken)}" placeholder="Enter the token provided to the human reviewer" /><p class="privacy-note">The token stays in this page’s memory and is not saved. Do not use this reviewer screen on a shared device.</p><button class="secondary-button" id="community-load-review-button" type="button" ${state.communityLoading ? 'disabled' : ''}>Load review queue</button></section>`}
     <div class="community-list">${cards}</div>
     ${!room && state.reviewPosts.length ? `<div class="review-actions">${state.reviewPosts.map(post => `<div class="review-action-row"><span>Final decision for ${escapeHtml(post.author || 'community member')}</span><button class="secondary-button" data-review="approved" data-post-id="${post.id}" type="button">Approve for room</button><button class="text-button" data-review="rejected" data-post-id="${post.id}" type="button">Do not approve</button></div>`).join('')}</div>` : ''}
     ${state.communityNotice ? `<div class="community-notice" role="status">${escapeHtml(state.communityNotice)}</div>` : ''}
@@ -238,8 +238,8 @@ async function loadCommunityReviewQueue() {
   }
 }
 async function submitCommunityPost() {
-  const text = String(document.getElementById('community-message')?.value || '').trim();
-  const consent = document.getElementById('community-consent')?.checked;
+  const text = String(document.getElementById('community-message')?.value || state.communityMessage || '').trim();
+  const consent = document.getElementById('community-consent')?.checked || state.communityConsent;
   if (!text) { state.communityNotice = 'Write a short sensory idea first.'; render(); return; }
   if (!consent) { state.communityNotice = 'Please confirm you understand the public-sharing rules before submitting.'; render(); return; }
   state.communityLoading = true;
@@ -251,6 +251,8 @@ async function submitCommunityPost() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text })
     });
+    state.communityMessage = '';
+    state.communityConsent = false;
     state.communityTab = 'room';
     state.communityNotice = 'Your post was received and is hidden until a human reviewer approves it.';
     await loadCommunityRoom();
@@ -396,6 +398,8 @@ function bindScreen() {
   document.getElementById('community-review-tab')?.addEventListener('click', () => {
     state.communityTab = 'review'; state.communityNotice = ''; state.reviewPosts = []; render();
   });
+  document.getElementById('community-message')?.addEventListener('input', event => { state.communityMessage = event.target.value.slice(0, 280); });
+  document.getElementById('community-consent')?.addEventListener('change', event => { state.communityConsent = event.target.checked; const button = document.getElementById('community-send-button'); if (button) button.disabled = !state.communityConsent || state.communityLoading; });
   document.getElementById('community-send-button')?.addEventListener('click', submitCommunityPost);
   document.getElementById('community-load-review-button')?.addEventListener('click', () => {
     state.moderatorToken = String(document.getElementById('community-moderator-token')?.value || '');
