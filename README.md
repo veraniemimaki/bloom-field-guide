@@ -2,28 +2,36 @@
 
 **Find a reset that feels like yours.**
 
-## Live demo
+## Try BLOOM — no setup required
 
-**[Open BLOOM](https://bloom-field-guide.onrender.com)**
+[**Open the live demo**](https://bloom-field-guide.onrender.com)
 
-### Two-minute judge walkthrough
+You only need this link and a modern web browser. No GitHub access, account, installation, API key, or setup is needed to try it.
 
-1. In **Patient**, choose a self-reported example or describe the moment, such as “indoors, tired, and wanting something steady.”
-2. Select **Shape a sensory experiment**. BLOOM uses local keyword rules and your saved ratings to suggest a moment and sound; inspect the explanation and edit either choice.
-3. Start the experiment. Set the sound level once for both sounds, play each browser-generated variation, and rate how each felt.
-4. Return to the start screen and repeat a similar check-in. The suggestion can now use ratings saved from the earlier check-in.
-5. Open **My field guide** for personal notes. **Care team preview** shows a fictional, consent-based follow-up timeline and lets you draft (but not send) a check-in; your own local notes and export are below it.
-6. Choose **Preview a fictional returning-user example** to see sample history kept separate from personal notes.
+### Two-minute walkthrough
 
-Switch between **Forest** and **Northern lights** in the banner; this changes the visual backdrop while keeping the sound experiment the same.
+1. In **Patient**, choose a check-in, then select **Shape a sensory experiment**.
+2. Review the suggested moment and sound. Choose **Try this suggestion**.
+3. Press **Play** for each sound and rate how it felt. You can skip either one.
+4. After both sounds, see what your feedback says. Try again to see how saved ratings can inform a later suggestion.
+5. Choose **Care team preview** to see a fictional example. It does not show or send anyone's real health data.
+6. Switch between **Forest** and **Northern lights** if you like; those change the backdrop, not the sound.
 
-Free-text descriptions are read in the browser only, then discarded. BLOOM saves the selected check-in category, sound feedback, and optional real-world cues in local storage on that device. The My field notes dialog can clear those saved notes and cues. The two soundscapes are synthesized in the browser. Allow audio playback when your browser asks.
+### What to know before sharing
+
+- Your ratings and check-in category stay in that browser on that computer. They do not follow you to another device. **My field notes** can clear saved ratings and cues.
+- A free-text description is read in the browser and discarded; BLOOM does not send it to an AI service.
+- **Community** uses a shared database. Posts are held for human review, and approved posts can be seen by anyone. Use fictional text only—never enter names, contact details, or personal health information. This is not crisis support, and no professional is alerted automatically.
+- Sound is generated in the browser. If you don’t hear it, press **Play** and check the computer’s volume.
+- For the demo, use fictional examples. BLOOM is a prototype, not a medical device or treatment; it does not diagnose, detect relapse, or replace clinical care.
+
+You don’t need to add someone as a GitHub collaborator just to let them try the live demo. Add repo access only if they need to view or change the private source code.
 
 ## What BLOOM does
 
-BLOOM is a prototype sensory field guide for people returning home after TMS. It lets someone describe or choose a moment, shape a short nature-inspired sound experiment, record how each variation felt, and build a personal guide from those responses. The care team preview uses fictional sample data to demonstrate a possible consent-based follow-up workflow. A person's own notes remain local and are only downloaded when they choose.
+BLOOM is a prototype sensory field guide for people returning home after TMS. It lets someone choose or describe a moment, try two nature-inspired sound variations, report how each felt, and keep a personal guide from those responses. Its suggestions use simple, explainable keyword rules and saved feedback—not AI or a reading of someone's mental state.
 
-This is an early demo, not a medical device or treatment. It does not measure brain activity, diagnose depression, detect relapse, or replace clinical care. Its suggestion logic is a small, explainable keyword rule—not an AI model or a reading of someone's mental state.
+The care team preview uses fictional data. It demonstrates a possible follow-up workflow but is not connected to real patient accounts or clinicians.
 
 ## Run locally
 
