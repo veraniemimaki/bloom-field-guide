@@ -44,9 +44,9 @@ function renderStart() {
   return `<p class="step-label">A two-minute sensory experiment · 1 of 3</p>
     <h1>What would feel useful right now?</h1>
     <p class="lead">Choose a moment. We’ll explore two versions of the same forest scene, changing only the sound.</p>
+    <button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a returning-user example <span aria-hidden="true">↗</span></button>
     <div class="choice-grid">${contexts.map(c => `<button class="choice-card ${state.context === c.id ? 'selected' : ''}" data-context="${c.id}" type="button"><span class="choice-icon">${c.icon}</span><span><span class="choice-title">${c.title}</span><span class="choice-sub">${c.sub}</span></span></button>`).join('')}</div>
     <div class="actions"><button class="primary-button" id="begin-button" type="button" ${state.context ? '' : 'disabled'}>Begin the experience <span aria-hidden="true">→</span></button><button class="text-button" id="skip-button" type="button">Not now</button></div>
-    <button class="quiet-link" id="sample-journey-button" type="button">Preview a returning-user example <span aria-hidden="true">↗</span></button>
     <p class="privacy-note">The example uses fictional responses and won’t be saved as your notes.</p>`;
 }
 function renderTrial() {
