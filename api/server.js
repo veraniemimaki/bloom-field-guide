@@ -139,6 +139,7 @@ const server = http.createServer(async (req, res) => {
     sendJson(res, 200, {
       status: "ok",
       mode: databaseReady ? "aiven-postgres" : "mock",
+      aivenConfigured: Boolean(process.env.AIVEN_DATABASE_URL && process.env.AIVEN_CA_CERT),
       communityReady: databaseReady && Boolean(process.env.COMMUNITY_MODERATOR_TOKEN)
     });
     return;
