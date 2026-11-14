@@ -20,7 +20,7 @@ You only need this link and a modern web browser. No GitHub access, account, ins
 ### What to know before sharing
 
 - Your ratings and check-in category stay in that browser on that computer. They do not follow you to another device. **My field notes** can clear saved ratings and cues.
-- A free-text description is read in the browser and discarded; BLOOM does not send it to an AI service. The daily reminder preference is stored locally and notifications work only while the page is open.
+- A free-text description stays in the browser unless the user explicitly chooses **Create an image for this moment**. Then it is sent to Google Gemini; BLOOM does not save the prompt or image. Avoid names or medical details. The daily reminder preference is stored locally and notifications work only while the page is open.
 - **Community** uses a shared database. Posts are held for human review, and approved posts can be seen by anyone. Use fictional text only—never enter names, contact details, or personal health information. This is not crisis support, and no professional is alerted automatically.
 - Sound is generated in the browser. If you don’t hear it, press **Play** and check the computer’s volume.
 - **Need support?** BLOOM is not monitored. It does not infer risk from ratings or alert anyone. In Finland, call 112 for urgent help; MIELI’s English support and booking details are linked in the app. Elsewhere, contact local emergency services or your care team.
@@ -58,7 +58,7 @@ Judges can use the live demo link above without GitHub repo access. The source r
 - Demo flow: self-reported check-in or optional description → local, explainable suggestion informed by saved feedback → two generated sound variations with a shared intensity setting → user rating → personal sensory field guide.
 - Saved ratings can personalize a future suggestion for the same check-in category or moment. A private 14-day panel shows recent ratings for the selected check-in, with small samples labeled as early signals rather than reliable patterns.
 - Care team preview uses fictional data. The current user's local notes are shown separately and downloaded only after they choose.
-- Check-in descriptions are never saved or sent; only the matched category and ratings are stored in this browser.
+- Check-in descriptions are not saved. They are sent to Google Gemini only if the person explicitly chooses image generation; otherwise they stay in the browser.
 - Aiven PostgreSQL powers shared Community posts and the protected human-review queue. Gemini moderation and Cloudinary media delivery are not connected yet; the forest and aurora scenes remain local CSS visuals.
 - The illustrated forest and procedural sounds are prototype assets.
 
@@ -68,7 +68,7 @@ Do not commit API keys, database passwords, certificates, or real health informa
 
 ## Server-side API foundation
 
-The `api/` service is a small Node HTTP API. It reports whether Aiven variables are present without exposing their values, and it provides the community read, submit, review-queue, and decision routes. The preference endpoint remains a mock keyword-based suggestion; BLOOM does not send free-text moment descriptions to an AI provider. Secrets belong in Render environment variables, never in browser code or Git.
+The `api/` service is a small Node HTTP API. It reports whether Aiven variables are present without exposing their values, and it provides the community read, submit, review-queue, and decision routes. The preference endpoint remains a mock keyword-based suggestion and does not send text to Gemini. The separate image-generation endpoint sends a moment description only when the person explicitly asks for an image. Secrets belong in Render environment variables, never in browser code or Git.
 
 ## Community and human review
 
@@ -94,3 +94,10 @@ The optional scene-image control uses Cloudinary's Upload Widget for a user-sele
 ## Winter sound profiles
 
 The northern-lights scene now offers two additional browser-generated sounds: **Snowfall hush** (soft, slowly wavering filtered noise) and **Distant ice chimes** (sparse, rounded synthesized tones). The forest keeps its wind and leaf pair. Ratings are saved with their scene and only inform later suggestions in that same scene, so northern-lights preferences do not get mixed with forest preferences. No audio service or API key is required.
+
+
+## Optional Gemini image generation
+
+The Patient moment-description box has an optional **Create an image for this moment** action. Only after the person taps it, BLOOM sends the description (up to 160 characters) from the browser to the server-side `POST /api/images/generate` route. The route calls Google's `gemini-3.1-flash-image` model, returns the image directly, and does not store either the prompt or image. The browser holds the image only in page memory. The route is rate-limited to three requests per connection per hour and two concurrent requests.
+
+Set `GEMINI_API_KEY` on the Render `bloom-api` service. The key is never sent to the browser. The API health response reports only whether this variable is configured, not its value. If it is absent, the image action shows a setup message; other BLOOM controls continue to work. Image generation uses Gemini API quota and may incur charges. No image-generation request is made automatically.
