@@ -206,6 +206,7 @@ function renderStart() {
     '<h1>Start with two short sounds.</h1>' +
     '<p class="lead">Start a simple comparison in ' + escapeHtml(contextTitle) + '. Forest and Northern lights each have their own sound pair. Check-ins, descriptions, and other options can wait until you want them.</p>' +
     '<div class="actions start-primary-action"><button class="primary-button" id="begin-button" type="button">Start the sound comparison <span aria-hidden="true">→</span></button></div>' +
+    '<div class="actions"><button class="secondary-button sample-button" id="sample-journey-button" type="button">See how feedback changes the next suggestion <span aria-hidden="true">↗</span></button></div>' +
     '<details class="start-personalize"><summary>Personalize this moment (optional)</summary><div class="start-personalize-content">' +
       '<section class="signal-panel" aria-labelledby="signal-heading">' +
         '<div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">YOUR CHOICE</span></div>' +
@@ -218,9 +219,9 @@ function renderStart() {
       '<div class="choice-grid">' + contextOptions + '</div>' +
       '<label class="support-option-field" for="support-option"><span class="support-option-title">Your own real-world cue <span>(optional)</span></span><textarea id="support-option" maxlength="160" placeholder="For example: settle somewhere comfortable">' + escapeHtml(supportOption) + '</textarea><span class="privacy-note">Saved only on this device. You can change or remove it anytime.</span></label>' +
       renderLearningLedger() + renderReminderCard() + renderCareCheckInRequest() +
-      '<div class="start-links"><button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a fictional returning-user example <span aria-hidden="true">↗</span></button>' +
+      '<div class="start-links">' +
       (hasPersonalGuide() ? '<button class="secondary-button sample-button" id="personal-guide-button" type="button">Open my field guide <span aria-hidden="true">→</span></button>' : '') +
-      '</div><p class="privacy-note">The example uses fictional responses and won’t be saved as your notes.</p>' +
+      '</div>' +
     '</div></details>';
 }
 function renderLearningLedger() {
