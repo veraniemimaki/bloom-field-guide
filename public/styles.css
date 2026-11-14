@@ -44,3 +44,82 @@
 
 :root{--leaf:#4b8b61;--leaf-dark:#2e6848;--sage:#e2f0e3}.primary-button{background:linear-gradient(135deg,#438357,#2e6848);box-shadow:0 4px 12px #28614022}.primary-button:hover{background:linear-gradient(135deg,#3d7952,#265a3e);box-shadow:0 5px 16px #28614033}.brand-mark{background:linear-gradient(145deg,#68a875,#397c55)}body{background:radial-gradient(ellipse at 84% 8%,#e3f0de 0%,transparent 35%),var(--cream)}.choice-card{background:linear-gradient(145deg,#fffefa,#f4f8ef)}.choice-card.selected{background:linear-gradient(145deg,#eef6e9,#e3f0e1)}
 @media(prefers-reduced-motion:reduce){.aurora-ribbon,.scene-banner,.scene-switch-button{animation:none!important;transition:none!important}}
+
+/* The alternate landscape changes the whole interface palette, not only the banner. */
+:root{--ink:#20392f;--muted:#627369;--leaf:#3e7954;--leaf-dark:#2e6344;--cream:#f7f5ee;--card:#fffdf8;--line:#e5e3d8;--gold:#dfb963;--sage:#e7eddf}
+body:not(.aurora-theme){background:radial-gradient(ellipse at 92% 3%,#f4e4cf 0%,transparent 31%),radial-gradient(ellipse at 7% 18%,#e2f0dd 0%,transparent 38%),var(--cream)}
+body:not(.aurora-theme) .scene-banner.forest-scene{background:linear-gradient(180deg,#c4e3e1 0%,#dcebd4 38%,#f5e5bd 62%,#9ab994 63%,#557c62 100%)}
+body:not(.aurora-theme) .scene-switch{background:#fffdf0d9;border-color:#fff9}
+body:not(.aurora-theme) .scene-switch-button.active{background:linear-gradient(135deg,#467e53,#326747)}
+body:not(.aurora-theme) .signal-panel{background:linear-gradient(130deg,#e4f0df,#f7f0dc);border-color:#d7e5d3}
+body:not(.aurora-theme) .choice-card{background:linear-gradient(145deg,#fffdf8,#f6f4e9)}
+body:not(.aurora-theme) .choice-card.selected{background:linear-gradient(145deg,#eef4e6,#f3f0df);border-color:#54845c}
+body:not(.aurora-theme) .primary-button{background:linear-gradient(135deg,#4b8659,#2e6848);box-shadow:0 4px 12px #2861401f}
+body:not(.aurora-theme) .primary-button:hover{background:linear-gradient(135deg,#3e754c,#285d3f)}
+body:not(.aurora-theme) .brand-mark{background:linear-gradient(145deg,#69a86e,#36724c)}
+body:not(.aurora-theme) .view-switch{background:#e9ede3}
+body:not(.aurora-theme) .view-button.active{background:#fffdf8;color:#315c40}
+body:not(.aurora-theme) .recipe-detail{background:linear-gradient(120deg,#eef3e8,#f5f0e1)}
+body:not(.aurora-theme) .evidence{background:#fbf6e8;color:#5d5c48}
+body:not(.aurora-theme) .feedback-button:hover{background:#f4f6e9}
+body.aurora-theme{--ink:#edf4ff;--muted:#b6c5d9;--leaf:#86e1d4;--leaf-dark:#a8d9f0;--cream:#0c1427;--card:#17243a;--line:#344660;--gold:#d8b8f4;--sage:#22364e;background:radial-gradient(ellipse at 15% -8%,#24385d 0%,transparent 42%),radial-gradient(ellipse at 100% 38%,#1c3b50 0%,transparent 38%),linear-gradient(145deg,#0c1427,#101b30 55%,#111d2a);color:var(--ink);min-height:100vh;transition:background .5s,color .35s}
+body.aurora-theme .brand-mark{background:linear-gradient(145deg,#7b92ee,#3eaaa9);color:#07162a}
+body.aurora-theme .top-note,body.aurora-theme .footer{color:#b8c9dc}
+body.aurora-theme .view-switch{background:#111d31;border-color:#354863}
+body.aurora-theme .view-button{color:#b8c9dc}
+body.aurora-theme .view-button.active{background:#2b3c59;color:#f4f7ff;box-shadow:0 2px 9px #050b18}
+body.aurora-theme .quiet-button{color:#b5e8e3;border-color:#40536c}
+body.aurora-theme .quiet-button:hover,body.aurora-theme .text-button:hover{background:#263a52}
+body.aurora-theme .text-button{color:#9adcd8}
+body.aurora-theme .primary-button{background:linear-gradient(120deg,#287f87,#416b9b);box-shadow:0 5px 18px #35c4c333}
+body.aurora-theme .primary-button:hover{background:linear-gradient(120deg,#32989b,#527bb0)}
+body.aurora-theme .secondary-button{background:#1c2b42;border-color:#40536d;color:#e5eef9}
+body.aurora-theme .choice-card{background:linear-gradient(145deg,#1a2940,#182b3e);border-color:#394d64;color:#e8f2fb}
+body.aurora-theme .choice-card:hover{border-color:#8bded5;background:#20364a}
+body.aurora-theme .choice-card.selected{background:linear-gradient(145deg,#253b54,#233c49);border-color:#7fd8ce;box-shadow:0 0 0 1px #7fd8ce}
+body.aurora-theme .choice-sub{color:#b8c9d8}
+body.aurora-theme .signal-panel{background:linear-gradient(135deg,#1b3044,#202b48 62%,#282744);border-color:#3d536c}
+body.aurora-theme .signal-option{background:#15243a;border-color:#3b5268;color:#dce9f8}
+body.aurora-theme .signal-option.selected{background:#263c50;border-color:#82ded2;box-shadow:0 0 0 1px #82ded2}
+body.aurora-theme .demo-tag{background:#3a3458;color:#e4d7ff}
+body.aurora-theme .suggestion-card,body.aurora-theme .trial-card,body.aurora-theme .recipe-card,body.aurora-theme .guide-card,body.aurora-theme .patient-card,body.aurora-theme .community-post{background:linear-gradient(145deg,#18263c,#17283b);border-color:#354a63;color:var(--ink)}
+body.aurora-theme .suggestion-select,body.aurora-theme .moment-field textarea,body.aurora-theme .trial-volume-control select,body.aurora-theme .community-composer textarea{background:#101d31;border-color:#405570;color:#eaf2fc}
+body.aurora-theme .sound-controls,body.aurora-theme .recipe-detail,body.aurora-theme .guide-cue,body.aurora-theme .patient-next,body.aurora-theme .empty-note,body.aurora-theme .review-action-row{background:#203149;color:#e0ebf6}
+body.aurora-theme .play-button{background:linear-gradient(140deg,#2e9d9a,#4a73a5);color:white}
+body.aurora-theme .feedback-button{background:#18283e;border-color:#3c5069;color:#edf4fc}
+body.aurora-theme .feedback-button:hover{background:#263d52;border-color:#83dcd3}
+body.aurora-theme .recipe-count{background:#27374d;color:#c5d4e6}
+body.aurora-theme .evidence{background:#2a2b45;border-left-color:#c7a9eb;color:#e7e1f1}
+body.aurora-theme .real-world{border-color:#354b64}
+body.aurora-theme .clinician-banner,body.aurora-theme .summary-toolbar{background:#1d3044;color:#dce9f4}
+body.aurora-theme .summary-row{background:#17263c;border-color:#384d65}
+body.aurora-theme .community-warning{background:#342d43;border-color:#5b4b69;color:#eadcf2}
+body.aurora-theme .community-composer{background:linear-gradient(140deg,#1a3043,#222b45);border-color:#3d526a}
+body.aurora-theme .community-tabs .selected{background:#273e55;border-color:#78d7cf}
+body.aurora-theme .review-banner{background:#332f4b;color:#eadff8}
+body.aurora-theme .community-notice{background:#292d43;border-left-color:#c9a9e9;color:#e2e6f0}
+body.aurora-theme .patient-status{background:#24424e;color:#b8eee4}
+body.aurora-theme .patient-status.waiting{background:#40394c;color:#e3d2fa}
+body.aurora-theme .patient-status.followup{background:#493542;color:#f2c9dc}
+body.aurora-theme .dialog{background:#17243a;border-color:#3a4d66;color:#edf4ff}
+body.aurora-theme .dialog::backdrop{background:#030916bb}
+body.aurora-theme .history-row{border-color:#354960}
+body.aurora-theme .scene-switch{background:#101a2bd9;border-color:#9ab6d266}
+body.aurora-theme .scene-switch-button{color:#d4e4f5}
+body.aurora-theme .scene-switch-button.active{background:linear-gradient(110deg,#347f91,#675da5);color:#fff;box-shadow:0 3px 13px #03091799}
+body.aurora-theme .scene-note{color:#d9e6f7}
+body.aurora-theme .scene-banner.aurora-scene{background:#10182c}
+body.aurora-theme .aurora-sky{background:linear-gradient(180deg,#070d20 0%,#111c35 56%,#26334b 100%)}
+body.aurora-theme .aurora-sky::before{content:"";position:absolute;inset:-20% -10% 18%;background:radial-gradient(ellipse at 28% 48%,#16d6ad38 0%,transparent 33%),radial-gradient(ellipse at 67% 40%,#8c61f145 0%,transparent 35%),radial-gradient(ellipse at 87% 60%,#3a91ed35 0%,transparent 28%);filter:blur(20px);animation:aurora-glow 16s ease-in-out infinite alternate}
+body.aurora-theme .aurora-sky::after{content:"";position:absolute;left:-5%;right:-5%;bottom:-2%;height:29%;z-index:3;background:linear-gradient(180deg,#1b2b42,#111c2d);clip-path:polygon(0 65%,9% 35%,16% 56%,25% 17%,35% 63%,43% 30%,53% 72%,62% 27%,72% 61%,82% 12%,91% 58%,100% 28%,100% 100%,0 100%)}
+body.aurora-theme .aurora-starfield{z-index:4;opacity:.95;background-image:radial-gradient(1.5px 1.5px at 8% 18%,#fff 55%,transparent 100%),radial-gradient(1px 1px at 17% 37%,#dcecff 55%,transparent 100%),radial-gradient(1.5px 1.5px at 27% 14%,#fff5d9 55%,transparent 100%),radial-gradient(1px 1px at 37% 29%,#e5eaff 55%,transparent 100%),radial-gradient(1.5px 1.5px at 48% 12%,#fff 55%,transparent 100%),radial-gradient(1px 1px at 59% 33%,#e0f4ff 55%,transparent 100%),radial-gradient(1.5px 1.5px at 70% 17%,#fff6da 55%,transparent 100%),radial-gradient(1px 1px at 81% 35%,#e6edff 55%,transparent 100%),radial-gradient(1.5px 1.5px at 93% 13%,#fff 55%,transparent 100%)}
+body.aurora-theme .aurora-ribbon{top:-32%;height:155%;width:35%;border-radius:0;clip-path:polygon(0 0,100% 0,100% 69%,93% 74%,84% 69%,75% 79%,65% 73%,55% 88%,45% 80%,34% 94%,24% 84%,12% 98%,0 88%);filter:blur(10px);mix-blend-mode:screen;opacity:.86;transform:none;animation:aurora-veil 19s ease-in-out infinite alternate}
+body.aurora-theme .ribbon-one{left:3%;background:linear-gradient(90deg,transparent 0%,#21d8a51a 17%,#48e8b98c 40%,#a9ffe2a6 53%,#4ad7bc5c 72%,transparent 100%);animation-duration:22s}
+body.aurora-theme .ribbon-two{left:32%;top:-38%;width:37%;background:linear-gradient(90deg,transparent 0%,#6556da28 13%,#a27af28c 35%,#8de9f2a8 52%,#579ce578 75%,transparent 100%);animation-delay:-8s;animation-duration:26s}
+body.aurora-theme .ribbon-three{left:65%;top:-29%;width:34%;background:linear-gradient(90deg,transparent 0%,#4c83ed1a 15%,#54c8ed87 39%,#8c73eba8 54%,#5ce1b65c 76%,transparent 100%);animation-delay:-14s;animation-duration:24s}
+@keyframes aurora-veil{0%{transform:translate3d(-1.6%,0,0) skewX(-2deg)}50%{transform:translate3d(1%,5px,0) skewX(1deg)}100%{transform:translate3d(2.2%,10px,0) skewX(3deg)}}
+@keyframes aurora-glow{0%{transform:translateX(-2%) scale(.98);opacity:.7}100%{transform:translateX(2%) scale(1.04);opacity:1}}
+@media(max-width:620px){body.aurora-theme .signal-panel,body.aurora-theme .choice-card,body.aurora-theme .community-composer{box-shadow:0 8px 28px #02081744}body.aurora-theme .aurora-ribbon{filter:blur(8px);opacity:.82}}
+@media(prefers-reduced-motion:reduce){body.aurora-theme .aurora-ribbon,body.aurora-theme .aurora-sky::before{animation:none!important}}
+
+body.aurora-theme .scene-banner.aurora-scene .aurora-sky{z-index:2}body.aurora-theme .scene-banner.aurora-scene::after{background:linear-gradient(90deg,#0b143044 0%,transparent 37%,transparent 75%,#0b153033 100%)}body:not(.aurora-theme) .scene-note{color:#fffef2;text-shadow:0 1px 8px #31523a}
