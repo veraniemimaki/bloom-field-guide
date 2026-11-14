@@ -1,5 +1,7 @@
 const STORE_KEY = 'bloom-field-notes-v1';
 const SUPPORT_STORE_KEY = 'bloom-support-options-v1';
+const REMINDER_STORE_KEY = 'bloom-reminder-settings-v1';
+const CARE_REQUEST_STORE_KEY = 'bloom-care-checkin-request-v1';
 const CLOUDINARY_SCENE_KEY = 'bloom-cloudinary-scene-v1';
 const cloudinaryConfig = window.BLOOM_CLOUDINARY || {};
 const COMMUNITY_API_BASE = 'https://bloom-api-g7bg.onrender.com';
@@ -27,7 +29,7 @@ const sampleNotes = [
 
 let notes = loadNotes();
 let supportOptions = loadSupportOptions();
-let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, momentDescription: '', followUps: {}, followUpDraft: 'Hi, I saw that you asked for a check-in. Would you like to share how things have been going, or would you prefer to talk at your next appointment?', followUpNotice: '', communityTab: 'room', communityMessage: '', communityConsent: false, communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '' };
+let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, momentDescription: '', followUps: {}, followUpDraft: 'Hi, I saw that you asked for a check-in. Would you like to share how things have been going, or would you prefer to talk at your next appointment?', followUpNotice: '', communityTab: 'room', communityMessage: '', communityConsent: false, communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '', reminderSettings: loadReminderSettings(), reminderNotice: '', careCheckInRequested: localStorage.getItem(CARE_REQUEST_STORE_KEY) === 'true' };
 const demoSignals = {
   restless: { label: 'Restless night', detail: 'A self-reported demo check-in: sleep felt unsettled.', context: 'wind-down', variant: 'wind', reason: 'A quieter wind-down moment may be worth trying after a restless night.' },
   overloaded: { label: 'Too much going on', detail: 'A self-reported demo check-in: the moment feels busy or overstimulating.', context: 'reset', variant: 'leaves', reason: 'A brief pause with a lighter leaf sound may be worth trying when things feel busy.' },
@@ -63,6 +65,94 @@ function loadSupportOptions() {
   } catch { return {}; }
 }
 function saveSupportOptions() { localStorage.setItem(SUPPORT_STORE_KEY, JSON.stringify(supportOptions)); }
+function loadReminderSettings() {
+  const defaults = { enabled: false, time: '19:00', frequency: 'daily', weeklyDay: 1, lastNotifiedDate: '' };
+  try {
+    const saved = JSON.parse(localStorage.getItem(REMINDER_STORE_KEY) || '{}');
+    return { ...defaults, ...(saved && typeof saved === 'object' ? saved : {}) };
+  } catch { return defaults; }
+}
+function saveReminderSettings() { localStorage.setItem(REMINDER_STORE_KEY, JSON.stringify(state.reminderSettings)); }
+function localDateKey(date) {
+  return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+}
+function checkReminderSchedule() {
+  const settings = state.reminderSettings;
+  if (!settings.enabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const currentTime = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const day = now.getDay();
+  const allowed = settings.frequency === 'daily' ||
+    (settings.frequency === 'weekdays' && day >= 1 && day <= 5) ||
+    (settings.frequency === 'weekly' && day === Number(settings.weeklyDay));
+  const today = localDateKey(now);
+  if (!allowed || currentTime !== settings.time || settings.lastNotifiedDate === today) return;
+  try {
+    new Notification('A gentle BLOOM moment', { body: 'If you like, take two minutes for a sensory activity. Skipping is always okay.' });
+    state.reminderSettings.lastNotifiedDate = today;
+    saveReminderSettings();
+  } catch {}
+}
+async function saveReminderPreferences() {
+  const enabled = Boolean(document.getElementById('reminder-enabled')?.checked);
+  const time = String(document.getElementById('reminder-time')?.value || state.reminderSettings.time || '19:00');
+  const frequency = String(document.getElementById('reminder-frequency')?.value || state.reminderSettings.frequency || 'daily');
+  const weeklyDay = Number(document.getElementById('reminder-weekday')?.value ?? state.reminderSettings.weeklyDay);
+  let permitted = enabled;
+  let notice = '';
+  if (enabled) {
+    if (!('Notification' in window)) {
+      permitted = false;
+      notice = 'This browser does not support notifications. The activity is still here whenever you open BLOOM.';
+    } else {
+      let permission = Notification.permission;
+      if (permission === 'default') permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        permitted = false;
+        notice = 'Notifications are blocked in this browser. Your activity is still available whenever you open BLOOM.';
+      }
+    }
+  }
+  state.reminderSettings = { ...state.reminderSettings, enabled: permitted, time, frequency, weeklyDay };
+  saveReminderSettings();
+  state.reminderNotice = notice || (permitted
+    ? 'Saved on this device. Reminders appear only while this page is open and notifications are allowed.'
+    : 'Preference saved. No browser notification is enabled.');
+  render();
+}
+function renderReminderCard() {
+  const r = state.reminderSettings;
+  const weekdays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const dayOptions = weekdays.map((day,index) => '<option value="' + index + '"' + (Number(r.weeklyDay) === index ? ' selected' : '') + '>' + day + '</option>').join('');
+  const weeklyField = r.frequency === 'weekly'
+    ? '<label for="reminder-weekday">Day<select id="reminder-weekday">' + dayOptions + '</select></label>'
+    : '';
+  return '<section class="reminder-card" aria-labelledby="reminder-title">' +
+    '<div class="reminder-heading"><div><p class="eyebrow">OPTIONAL · A GENTLE RITUAL</p><h2 id="reminder-title">A two-minute moment, when it suits you</h2></div>' +
+    '<label class="reminder-toggle"><input id="reminder-enabled" type="checkbox"' + (r.enabled ? ' checked' : '') + '> Remind me</label></div>' +
+    '<p>Choose a time and rhythm. The activity is always optional. Browser reminders work only while BLOOM is open and notifications are allowed.</p>' +
+    '<div class="reminder-fields"><label for="reminder-time">Time<input id="reminder-time" type="time" value="' + escapeHtml(r.time) + '"></label>' +
+    '<label for="reminder-frequency">How often<select id="reminder-frequency"><option value="daily"' + (r.frequency === 'daily' ? ' selected' : '') + '>Every day</option><option value="weekdays"' + (r.frequency === 'weekdays' ? ' selected' : '') + '>Weekdays</option><option value="weekly"' + (r.frequency === 'weekly' ? ' selected' : '') + '>Once a week</option></select></label>' + weeklyField + '</div>' +
+    '<div class="reminder-save-row"><button class="secondary-button" id="save-reminder-button" type="button">Save reminder settings</button><span class="privacy-note" role="status">' + escapeHtml(state.reminderNotice) + '</span></div>' +
+    '<p class="privacy-note">Your schedule stays in this browser. You can skip any check-in or activity.</p></section>';
+}
+function renderCareCheckInRequest() {
+  return '<section class="care-request-card" aria-labelledby="care-request-title"><div><p class="eyebrow">YOU CHOOSE WHAT TO SHARE</p>' +
+    '<h2 id="care-request-title">Would a check-in with your care team help?</h2>' +
+    '<p>This is only a note for you. BLOOM does not contact anyone. It appears in your summary only if you download it and choose to share it.</p></div>' +
+    '<button class="' + (state.careCheckInRequested ? 'secondary-button' : 'primary-button') + '" id="care-checkin-request-button" type="button" aria-pressed="' + String(state.careCheckInRequested) + '">' +
+    (state.careCheckInRequested ? 'Remove check-in request' : 'I’d like a check-in') + '</button></section>';
+}
+function renderSessionSupport() {
+  return state.session.some(item => item.response === 'worse')
+    ? '<div class="gentle-support-note"><strong>You marked a sound as “felt worse.”</strong><p>You can skip the next sound or stop here. BLOOM does not treat this as a risk alert or notify anyone.</p><button class="text-button" data-open-support type="button">See support options</button></div>'
+    : '';
+}
+function openSupportDialog() {
+  const dialog = document.getElementById('support-dialog');
+  if (dialog && !dialog.open) dialog.showModal();
+}
+
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 }
@@ -107,6 +197,8 @@ function renderStart() {
       <p class="privacy-note">Suggestions use transparent keyword rules and your saved ratings. They are exploratory, not a reading of your mental state or clinical recommendations.</p>
     </section>
     ${renderLearningLedger()}
+    ${renderReminderCard()}
+    ${renderCareCheckInRequest()}
     <div class="start-links"><button class="secondary-button sample-button" id="sample-journey-button" type="button">Preview a fictional returning-user example <span aria-hidden="true">↗</span></button>${hasPersonalGuide() ? '<button class="secondary-button sample-button" id="personal-guide-button" type="button">Open my field guide <span aria-hidden="true">→</span></button>' : ''}</div>
     <div class="choice-grid">${contexts.map(c => `<button class="choice-card ${state.context === c.id ? 'selected' : ''}" data-context="${c.id}" type="button"><span class="choice-icon">${c.icon}</span><span><span class="choice-title">${c.title}</span><span class="choice-sub">${c.sub}</span></span></button>`).join('')}</div>
     ${state.context ? `<label class="support-option-field" for="support-option"><span class="support-option-title">Your own real-world cue <span>(optional)</span></span><textarea id="support-option" maxlength="160" placeholder="${state.context === 'wind-down' ? 'For example: settle somewhere comfortable' : state.context === 'reset' ? 'For example: notice your feet on the floor' : 'For example: look outside from where you are'}">${escapeHtml(supportOption)}</textarea><span class="privacy-note">Saved only on this device. You can change or remove it anytime.</span></label>` : ''}
@@ -134,6 +226,7 @@ function renderTrial() {
   return `<p class="step-label">${getChoice(contexts, state.context).title} · ${step} of 2</p>
     <h1>Notice how this version feels.</h1>
     <p class="lead">Take a few seconds, or skip ahead whenever you like. There’s no right response.</p>
+    ${renderSessionSupport()}
     <div class="trial-card"><div class="trial-head"><div><p class="eyebrow">SOUND ${step}</p><h2>${variant.title}</h2><p>${variant.description}</p></div><span class="variant-pill">${step === 1 ? 'Version A' : 'Version B'}</span></div>
       <div class="sound-controls"><button class="play-button" id="play-button" type="button" aria-label="Play sound">${playing ? 'Ⅱ' : '▶'}</button><div class="sound-meta"><strong>${variant.title} ambience</strong><span>Generated in this browser · level is shared across both sounds</span></div><label class="trial-volume-control" for="trial-sound-level"><span>Level</span><select id="trial-sound-level"><option value="soft" ${state.soundLevel === 'soft' ? 'selected' : ''}>Very soft</option><option value="gentle" ${state.soundLevel === 'gentle' ? 'selected' : ''}>Gentle</option><option value="fuller" ${state.soundLevel === 'fuller' ? 'selected' : ''}>A little fuller</option></select></label><span class="sound-status" id="sound-status">${playing ? 'Playing' : 'Ready'}</span></div>
       <p class="feedback-label">How did it feel for you?</p><div class="feedback-grid">${feedback.map(f => `<button class="feedback-button" data-feedback="${f.id}" type="button"><span>${f.icon}</span>${f.label}</button>`).join('')}</div>
@@ -326,7 +419,7 @@ function renderPersonalSummary() {
   return `<p class="step-label">Your notes · stored in this browser</p><h1>A summary you choose whether to share.</h1>
     <p class="lead">Review the check-ins and sound experiences you chose to record. Nothing is sent to a care team from this screen.</p>
     <div class="clinician-banner"><span class="demo-tag">YOUR FIELD NOTES</span><span>Not a clinical assessment · no risk or adherence score</span></div>
-    <div class="summary-toolbar"><span>${entries.length} ${entries.length === 1 ? 'rated experience' : 'rated experiences'}</span><button class="primary-button" id="download-summary-button" type="button" ${entries.length ? '' : 'disabled'}>Download summary to share</button></div>
+    <div class="summary-toolbar"><span>${entries.length} ${entries.length === 1 ? 'rated experience' : 'rated experiences'}${state.careCheckInRequested ? ' · check-in requested' : ''}</span><button class="primary-button" id="download-summary-button" type="button" ${entries.length || state.careCheckInRequested ? '' : 'disabled'}>Download summary to share</button></div>${state.careCheckInRequested ? '<div class="care-request-summary"><strong>Your note:</strong> I’d like a check-in with my care team. This is saved locally and is not sent.</div>' : ''}
     <div class="summary-list">${summaryRows}</div>
     <p class="privacy-note">Downloading creates a text file on your device. BLOOM does not transmit it; you decide whether and with whom to share it.</p>`;
 }
@@ -415,6 +508,7 @@ function renderRecipe() {
       <div class="recipe-detail"><span class="mini-icon">${best.icon}</span><div><strong>${best.title}</strong><span>Forest scene · sound only</span></div></div>` : `<div class="recipe-top"><div><p class="eyebrow">${getChoice(contexts, state.context).title.toUpperCase()}</p><h2>No sound selected</h2></div></div>`}
       <div class="evidence"><strong>${state.previewSample ? 'What the sample notes say' : 'What your notes say'}</strong><br>${evidence}${state.previewSample ? '<br><span class="privacy-note">Fictional example only—not a real person’s history.</span>' : ''}</div>
       ${state.sessionSignal ? `<div class="real-world"><strong>Your check-in</strong><p>${escapeHtml(demoSignals[state.sessionSignal]?.label || state.sessionSignal)} · self-reported</p></div>` : ''}
+      ${renderSessionSupport()}
       ${supportOption ? `<div class="real-world"><strong>Your optional real-world cue</strong><p>${escapeHtml(supportOption)}</p></div>` : ''}
       ${hasSupportiveSignal ? `<div class="real-world"><strong>An optional cue for this moment</strong><p>${takeAlong}</p></div>` : ''}
       ${state.session.some(x => x.skipped) ? '<p class="privacy-note">Skipped versions weren’t counted as feedback.</p>' : ''}
@@ -430,11 +524,12 @@ function rankVariants(contextId) {
   }).sort((a,b) => b.score - a.score || b.positive - a.positive || a.count - b.count);
 }
 function downloadCareSummary() {
-  if (!notes.length) return;
+  if (!notes.length && !state.careCheckInRequested) return;
   const lines = [
     'BLOOM — Home experience summary',
     `Created ${new Date().toLocaleString()}`,
     'Based on self-reported choices and ratings saved in this browser. Not a clinical assessment.',
+    'Care-team check-in request: ' + (state.careCheckInRequested ? 'I would like a check-in (not sent by BLOOM; share this file yourself).' : 'Not requested.'),
     ''
   ];
   [...notes].reverse().forEach(entry => {
@@ -493,6 +588,16 @@ function bindScreen() {
   document.getElementById('use-suggestion-button')?.addEventListener('click', () => { state.context = state.suggestion.context; state.previewSample = false; state.sessionSignal = state.suggestion.checkinTag; state.screen = 'trial'; state.firstVariant = state.suggestion.variant; state.index = 0; state.session = []; state.view = 'patient'; render(); });
   document.getElementById('clear-suggestion-button')?.addEventListener('click', () => { state.suggestion = null; state.momentMatch = null; state.descriptionEntered = false; render(); });
   document.getElementById('download-summary-button')?.addEventListener('click', downloadCareSummary);
+  document.querySelectorAll('[data-open-support]').forEach(button => button.addEventListener('click', openSupportDialog));
+  document.getElementById('save-reminder-button')?.addEventListener('click', saveReminderPreferences);
+  document.getElementById('reminder-time')?.addEventListener('input', event => { state.reminderSettings.time = event.target.value; });
+  document.getElementById('reminder-frequency')?.addEventListener('change', event => { state.reminderSettings.frequency = event.target.value; render(); });
+  document.getElementById('reminder-weekday')?.addEventListener('change', event => { state.reminderSettings.weeklyDay = Number(event.target.value); });
+  document.getElementById('care-checkin-request-button')?.addEventListener('click', () => {
+    state.careCheckInRequested = !state.careCheckInRequested;
+    localStorage.setItem(CARE_REQUEST_STORE_KEY, String(state.careCheckInRequested));
+    render();
+  });
   document.querySelectorAll('[data-context]').forEach(button => button.addEventListener('click', () => { state.context = button.dataset.context; render(); }));
   document.getElementById('personal-guide-button')?.addEventListener('click', () => { state.screen = 'guide'; state.previewSample = false; render(); });
   document.getElementById('guide-back-button')?.addEventListener('click', () => { state.screen = 'start'; state.context = null; render(); });
@@ -633,8 +738,9 @@ function openCloudinaryUpload() {
 }
 
 document.getElementById('history-button').addEventListener('click', () => { renderHistory(); document.getElementById('history-dialog').showModal(); });
+document.getElementById('support-button')?.addEventListener('click', openSupportDialog);
 document.getElementById('about-button').addEventListener('click', () => document.getElementById('about-dialog').showModal());
-document.getElementById('clear-button').addEventListener('click', () => { notes = []; supportOptions = {}; saveNotes(); saveSupportOptions(); renderHistory(); });
+document.getElementById('clear-button').addEventListener('click', () => { notes = []; supportOptions = {}; state.careCheckInRequested = false; localStorage.removeItem(CARE_REQUEST_STORE_KEY); saveNotes(); saveSupportOptions(); renderHistory(); });
 function renderHistory() {
   const host = document.getElementById('history-content');
   if (!notes.length) { host.innerHTML = '<div class="empty-note">No saved field notes yet. Try a short experience to start one.</div>'; return; }
@@ -643,4 +749,4 @@ function renderHistory() {
 }
 
 render();
-
+setInterval(checkReminderSchedule, 30000);
