@@ -29,7 +29,7 @@ const sampleNotes = [
 
 let notes = loadNotes();
 let supportOptions = loadSupportOptions();
-let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, momentDescription: '', followUps: {}, followUpDraft: 'Hi, I saw that you asked for a check-in. Would you like to share how things have been going, or would you prefer to talk at your next appointment?', followUpNotice: '', communityTab: 'room', communityMessage: '', communityConsent: false, communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '', reminderSettings: loadReminderSettings(), reminderNotice: '', careCheckInRequested: localStorage.getItem(CARE_REQUEST_STORE_KEY) === 'true' };
+let state = { screen: 'start', context: null, index: 0, session: [], previewSample: false, firstVariant: null, sessionSignal: null, soundLevel: 'gentle', momentMatch: null, descriptionEntered: false, view: 'patient', signal: 'restless', suggestion: null, momentDescription: '', followUps: {}, followUpDraft: 'Hi, I saw that you asked for a check-in. Would you like to share how things have been going, or would you prefer to talk at your next appointment?', followUpNotice: '', communityTab: 'room', communityMessage: '', communityConsent: false, communityNotice: '', communityLoading: false, communityPosts: [], reviewPosts: [], moderatorToken: '', reminderSettings: loadReminderSettings(), reminderNotice: '', careCheckInRequested: localStorage.getItem(CARE_REQUEST_STORE_KEY) === 'true', personalizeOpen: false };
 const demoSignals = {
   restless: { label: 'Restless night', detail: 'A self-reported demo check-in: sleep felt unsettled.', context: 'wind-down', variant: 'wind', reason: 'A quieter wind-down moment may be worth trying after a restless night.' },
   overloaded: { label: 'Too much going on', detail: 'A self-reported demo check-in: the moment feels busy or overstimulating.', context: 'reset', variant: 'leaves', reason: 'A brief pause with a lighter leaf sound may be worth trying when things feel busy.' },
@@ -159,6 +159,12 @@ function escapeHtml(value) {
 function getChoice(list, id) { return list.find(item => item.id === id); }
 function render() {
   const app = document.getElementById('app');
+  if (state.screen === 'start') {
+    const personalizeDetails = app.querySelector('.start-personalize');
+    if (personalizeDetails) state.personalizeOpen = personalizeDetails.open;
+  } else {
+    state.personalizeOpen = false;
+  }
   if (state.screen === 'start') app.innerHTML = renderStart();
   if (state.screen === 'trial') app.innerHTML = renderTrial();
   if (state.screen === 'recipe') app.innerHTML = renderRecipe();
@@ -207,7 +213,7 @@ function renderStart() {
     '<p class="lead">Start a simple comparison in ' + escapeHtml(contextTitle) + '. Forest and Northern lights each have their own sound pair. Check-ins, descriptions, and other options can wait until you want them.</p>' +
     '<div class="actions start-primary-action"><button class="primary-button" id="begin-button" type="button">Start the sound comparison <span aria-hidden="true">→</span></button></div>' +
     '<div class="actions"><button class="secondary-button sample-button" id="sample-journey-button" type="button">See how feedback changes the next suggestion <span aria-hidden="true">↗</span></button></div>' +
-    '<details class="start-personalize"><summary>Personalize this moment (optional)</summary><div class="start-personalize-content">' +
+    '<details class="start-personalize" ' + (state.personalizeOpen ? 'open' : '') + '><summary>Personalize this moment (optional)</summary><div class="start-personalize-content">' +
       '<section class="signal-panel" aria-labelledby="signal-heading">' +
         '<div class="signal-heading"><div><p class="eyebrow">OPTIONAL · SELF-REPORTED CHECK-IN</p><h2 id="signal-heading">What is this moment like?</h2></div><span class="demo-tag">YOUR CHOICE</span></div>' +
         '<p class="signal-copy"><strong>' + escapeHtml(demoSignals[state.signal].detail) + '</strong><br>Choose an example, describe the moment in your own words, or skip the check-in. No phone or wearable sensors are read.</p>' +
